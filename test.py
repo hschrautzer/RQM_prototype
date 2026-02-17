@@ -12,3 +12,8 @@ spins = np.column_stack((df["sx"].to_numpy(),df["sy"].to_numpy(),df["sz"].to_num
 
 mag = magnetization(points=points,spins=spins)
 
+print(mag.energy())
+print(mag.gradient())
+print(mag.basis())
+print(mag.basis()[:,:,0])
+print(mag.gradient_tspace_2N())

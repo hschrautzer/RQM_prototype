@@ -26,6 +26,8 @@ class magnetization:
 
     def energy(self) -> float:
         r"""
+        This just contains nearest neighbor exchange
+
         :return: the energy of the configuration
         """
         energy = 0
@@ -37,6 +39,8 @@ class magnetization:
 
     def gradient(self) -> np.ndarray:
         r"""
+        This just contains nearest neighbor exchange
+
         :return: the gradient of the configuration
         """
         gradient = np.zeros_like(self._spins)
@@ -45,6 +49,68 @@ class magnetization:
             for neigh_idx in indices:
                 gradient[i, :] -= self._exchange_constant * self._spins[neigh_idx]
         return gradient
+
+    def gradient_tspace_3N(self) -> np.ndarray:
+        r"""
+
+        :return:
+        """
+        grad = self.gradient()
+        return np.asarray([grad[i]-np.dot(grad[i],s)*s for i,s in enumerate(self._spins)])
+        #return grad - np.linalg.vd(grad,self._spins)*grad
+
+    def gradient_tspace_2N(self) -> np.ndarray:
+        r"""
+
+        :return:
+        """
+        basis = self.basis()
+        return np.asarray([[np.dot(basis[:,0,i],g),np.dot(basis[:,1,i],g)] for i,g in enumerate(self.gradient())])
+
+
+
+
+    def basis(self) -> np.ndarray:
+        r"""
+        Calculates the tangent space basis of the magnetic configuration
+        :return: np.ndarray of shape (3,2,N)
+        """
+        basis = np.zeros(shape=(3,2,len(self._spins)))
+        for idx, spin in enumerate(self._spins):
+            if np.abs(spin[2]) >= 0.5:
+                # normalize v=(1,0,0)
+                xi = np.array([1.0 - spin[0] * spin[0], -spin[0] * spin[1], -spin[0] * spin[2]])
+            else:
+                xi = np.array([-spin[2] * spin[0], -spin[2] * spin[1], 1 - spin[2] * spin[2]])
+            xi = xi / np.linalg.norm(xi)
+            eta = np.cross(xi, spin)
+            eta = eta / np.linalg.norm(eta)
+            basis[:, 0, idx] = xi
+            basis[:, 1, idx] = eta
+        return basis
+
+    def project_to_basis(self, vec_embedding_space) -> np.ndarray:
+        r"""
+        Takes a 3N vector from embedding space (shape (N,3)) and projects it to tangent space (shape (N,2) by
+        calculating basis[:,:,i] * vec[:,i]
+        :param vec_embedding_space:
+        :return:
+        """
+
+    def rotate_along(self, vec_tspace: np.ndarray, displacement_parameter: float = 1.0) -> 'magnetization':
+        r"""
+        Rotate the magnetization along a vector in tangent space of the current magnetization (Retraction) and
+        return the rotated magnetization
+
+        :param vec_tspace:
+        :return:
+        """
+        pass
+
+    def parallel_transport(self,vec_to_be_transported: np.ndarray,  vec_tspace: np.ndarray,displacement_parameter: float = 1.0) -> np.ndarray:
+        pass
+
+
 
     @property
     def points(self) -> np.ndarray:
@@ -61,3 +127,5 @@ class magnetization:
         :return:
         """
         return self.spins
+
+
