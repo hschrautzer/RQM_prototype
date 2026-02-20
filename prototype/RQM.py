@@ -134,6 +134,7 @@ class RQM:
         X = np.zeros(shape=(len(self._mag.spins),2,dim_subspace))
         # Project initial guess to tangent space
         for p in range(dim_subspace):
+            # @todo: project to basis
             X[:,:,p] = self.magnetization.project_to_basis(vec_embedding_space=v_ini[:,:,p])
 
         # QR decomposition of X
