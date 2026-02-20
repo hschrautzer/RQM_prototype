@@ -94,10 +94,11 @@ class Magnetization:
         :param vec_embedding_space:
         :return:
         """
+        l_basis = self.basis()
 
     @classmethod
-    def rotate_along(cls, current_mag: 'Magnetization', vec_tspace: np.ndarray,
-                     displacement_parameter: float = 1.0, rodriguez_threshold: float = 1.0e-5) -> 'Magnetization':
+    def retraction(cls, current_mag: 'Magnetization', vec_tspace: np.ndarray,
+                   displacement_parameter: float = 1.0, rodriguez_threshold: float = 1.0e-5) -> 'Magnetization':
         r"""
         This is a class method and is given the current magnetization instance. It returns a new instance with the same
         properties but the spins have been rotated along a vector in tangent space of the current magnetization
@@ -122,8 +123,7 @@ class Magnetization:
                 rotated_spins[idx, :] = spin * np.cos(angle_i) + disp * (
                         1.0 - 1.0 / 6.0 * angle_i ** 2 + 1.0 / 120.0 * angle_i ** 4)
             rotated_spins[idx, :] = rotated_spins[idx, :] / np.linalg.norm(rotated_spins[idx, :])
-        return cls(points=current_mag.points,spins=rotated_spins)
-
+        return cls(points=current_mag.points, spins=rotated_spins)
 
     def parallel_transport(self, vec_to_be_transported: np.ndarray, vec_tspace: np.ndarray,
                            displacement_parameter: float = 1.0) -> np.ndarray:
