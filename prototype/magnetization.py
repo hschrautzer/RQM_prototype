@@ -5,7 +5,7 @@ import numpy as np
 import scipy.spatial as spt
 
 
-class magnetization:
+class Magnetization:
     r"""
     Represents the magnetization of a lattice instance. This corresponds to CSpinLattice in Spinaker.
     """
@@ -56,8 +56,8 @@ class magnetization:
         :return:
         """
         grad = self.gradient()
-        return np.asarray([grad[i]-np.dot(grad[i],s)*s for i,s in enumerate(self._spins)])
-        #return grad - np.linalg.vd(grad,self._spins)*grad
+        return np.asarray([grad[i] - np.dot(grad[i], s) * s for i, s in enumerate(self._spins)])
+        # return grad - np.linalg.vd(grad,self._spins)*grad
 
     def gradient_tspace_2N(self) -> np.ndarray:
         r"""
@@ -65,17 +65,15 @@ class magnetization:
         :return:
         """
         basis = self.basis()
-        return np.asarray([[np.dot(basis[:,0,i],g),np.dot(basis[:,1,i],g)] for i,g in enumerate(self.gradient())])
-
-
-
+        return np.asarray(
+            [[np.dot(basis[:, 0, i], g), np.dot(basis[:, 1, i], g)] for i, g in enumerate(self.gradient())])
 
     def basis(self) -> np.ndarray:
         r"""
         Calculates the tangent space basis of the magnetic configuration
         :return: np.ndarray of shape (3,2,N)
         """
-        basis = np.zeros(shape=(3,2,len(self._spins)))
+        basis = np.zeros(shape=(3, 2, len(self._spins)))
         for idx, spin in enumerate(self._spins):
             if np.abs(spin[2]) >= 0.5:
                 # normalize v=(1,0,0)
@@ -97,20 +95,39 @@ class magnetization:
         :return:
         """
 
-    def rotate_along(self, vec_tspace: np.ndarray, displacement_parameter: float = 1.0) -> 'magnetization':
+    @classmethod
+    def rotate_along(cls, current_mag: 'Magnetization', vec_tspace: np.ndarray,
+                     displacement_parameter: float = 1.0, rodriguez_threshold: float = 1.0e-5) -> 'Magnetization':
         r"""
-        Rotate the magnetization along a vector in tangent space of the current magnetization (Retraction) and
-        return the rotated magnetization
+        This is a class method and is given the current magnetization instance. It returns a new instance with the same
+        properties but the spins have been rotated along a vector in tangent space of the current magnetization
+        (Retraction).
 
-        :param vec_tspace:
-        :return:
+        :param current_mag: Magnetization instance with current orientation of magnetic moments
+        :param vec_tspace: Vector in tangent space of current configuration (3N representation)
+        :param displacement_parameter: scaling of the rotation
+        :param rodriguez_threshold: the threshold below which rotation will be according to taylor expansion of rod.
+        :return: New magnetization instance with changed orientation of spins.
         """
+        rotated_spins = np.zeros(shape=np.shape(current_mag.spins))
+        for (idx, spin) in enumerate(current_mag.spins):
+            disp = vec_tspace[idx, :] * displacement_parameter
+            angle_i = np.linalg.norm(disp)
+            if angle_i == 0.0:
+                rotated_spins[idx, :] = spin
+                continue
+            if angle_i >= rodriguez_threshold:
+                rotated_spins[idx, :] = spin * np.cos(angle_i) + disp * np.sin(angle_i) / angle_i
+            else:
+                rotated_spins[idx, :] = spin * np.cos(angle_i) + disp * (
+                        1.0 - 1.0 / 6.0 * angle_i ** 2 + 1.0 / 120.0 * angle_i ** 4)
+            rotated_spins[idx, :] = rotated_spins[idx, :] / np.linalg.norm(rotated_spins[idx, :])
+        return cls(points=current_mag.points,spins=rotated_spins)
+
+
+    def parallel_transport(self, vec_to_be_transported: np.ndarray, vec_tspace: np.ndarray,
+                           displacement_parameter: float = 1.0) -> np.ndarray:
         pass
-
-    def parallel_transport(self,vec_to_be_transported: np.ndarray,  vec_tspace: np.ndarray,displacement_parameter: float = 1.0) -> np.ndarray:
-        pass
-
-
 
     @property
     def points(self) -> np.ndarray:
@@ -127,5 +144,3 @@ class magnetization:
         :return:
         """
         return self.spins
-
-

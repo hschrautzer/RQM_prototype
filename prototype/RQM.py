@@ -3,11 +3,14 @@ r"""
 """
 import numpy as np
 
-from prototype.magnetization import magnetization
+from prototype.magnetization import Magnetization
 
 class RQM:
+    r"""
 
-    def __init__(self,magnetization: magnetization, epsilon_fin_diff: float = 1.0, conv_crit: float) -> None:
+    """
+
+    def __init__(self,magnetization: Magnetization, epsilon_fin_diff: float = 1.0, conv_crit: float) -> None:
         r"""
 
         """
