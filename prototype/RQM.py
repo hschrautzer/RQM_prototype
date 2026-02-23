@@ -50,13 +50,13 @@ class RQM:
         shape_v_ini = np.shape(v_ini)
         dim_subspace = shape_v_ini[2]
         # Number of atoms
-        N = shape_v_ini[0]
+        N = shape_v_ini[1]
         if N != len(self._mag.spins):
             self._logger.error(f"Length of the input vector ({N}) does not match length of spin-array"
                                f" ({len(self._mag.spins)}")
             raise ValueError(f"Length of the input vector ({N}) does not match length of spin-array"
                              f" ({len(self._mag.spins)}")
-        if shape_v_ini[1] != 3:
+        if shape_v_ini[0] != 3:
             self._logger.error(f"Dimensionality of input vector component is expected to be 3,"
                                f" while I got {shape_v_ini[1]}")
             raise ValueError(f"Dimensionality of input vector component is expected to be 3,"
@@ -99,18 +99,22 @@ class RQM:
         dim_subspace = shape[2]
         HX = np.zeros_like(X)
         for p in range(dim_subspace):
-            HX[:,:,p] = self.H_colX_findiff(x_col=X[:,:,p])
+            HX[:,p] = self.H_colX_findiff(x_col=X[:,p])
 
     def H_colX_findiff(self, x_col) -> np.ndarray:
         r"""
-        Computes finite difference action of a column of X with hessian
+        Computes finite difference action of the Hessian applied to a column of X
 
-        :param x_col:
-        :return:
+        :param x_col: A 2N-dimensional flattened column of X
+        :return: The finite-difference approximation of H*x (of shape (2N))
         """
-        grad = self.magnetization.gradient_tspace_3N()
-        mag_rotated = self.magnetization.rotate_along(vec=x_col,displacement_parameter=self._epsilon)
-        grad_forward = mag_rotated.gradient_tspace_3N()
+        # Compute the energy gradient (in 3N vector format)
+        grad = self._mag.gradient_tspace_3N(flatten=True)
+        # Rotate the magnetization along the column (by construction in tangent space of the current magnetization)
+        mag_rotated = Magnetization.retraction(current_mag=self._mag, vec_tspace=x_col,
+                                               displacement_parameter=self._epsilon)
+        # Compute the energy gradient of the rotated configuration.
+        grad_forward = mag_rotated.gradient_tspace_3N(flatten=True)
         # rotate back to tangent frame of initial configuration
         grad_forward_rotated_back = mag_rotated.parallel_transport(grad_forward,x_col,displacement_parameter=-self._epsilon)
         return (grad - grad_forward_rotated_back) / self._epsilon
@@ -121,7 +125,7 @@ class RQM:
         Calls the RQM minimization initialized with v_ini.
 
         :param v_ini: Initial guess for evecs of lowest subspace but in 3N embedding space representation. It's shape is
-            [N,3,p], where p is the dimension of the subspace and N is the number of atoms/spins and 3 encodes the x,y,z
+            [3,N,p], where p is the dimension of the subspace and N is the number of atoms/spins and 3 encodes the x,y,z
             component of each vector
         :return:
         """
@@ -131,15 +135,18 @@ class RQM:
         # The 3N embedding space representation needs to the projected to 2N tangent space, since we are looking for
         # parametrisations of this 2N tangent space. If we would carry the superfluous N degrees of freedom, numerical
         # errors would accumulate.
-        X = np.zeros(shape=(len(self._mag.spins),2,dim_subspace))
+        # Furthermore, flatten the 2N degrees of freedom such that X is a matrix with p columns and 2N rows.
+        X = np.zeros(shape=(2*len(self._mag.spins),dim_subspace))
         # Project initial guess to tangent space
         for p in range(dim_subspace):
-            # @todo: project to basis
-            X[:,:,p] = self.magnetization.project_to_basis(vec_embedding_space=v_ini[:,:,p])
+            X[:,p] = self._mag.project_to_basis(vec_embedding_space=v_ini[:,:,p],flatten=True)
 
-        # QR decomposition of X
+        # QR decomposition of X. Taking the Q-Factor of the QR decomposition effectively corresponds to a retraction
+        # onto the Stiefel manifold. Numerically, it does not make a difference whether we optimize on the Stiefel
+        # manifold or the Grassmannian.
+        X = np.linalg.qr(X,mode='complete')
 
-        # Compute product of Hessian with each column of X (HX is of shape (N,2,p))
+        # Compute product of Hessian with each column of X (HX is of shape (2*N,p))
         HX = self.HX_findiff(X)
 
         # Compute X^T * HX

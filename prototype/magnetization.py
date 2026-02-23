@@ -50,13 +50,19 @@ class Magnetization:
                 gradient[i, :] -= self._exchange_constant * self._spins[neigh_idx]
         return gradient
 
-    def gradient_tspace_3N(self) -> np.ndarray:
+    def gradient_tspace_3N(self, flatten: bool = False) -> np.ndarray:
         r"""
+        Computes the energy gradient of this magnetization instance. The gradient is given in 3N embedding space,
+         representation but tangent of the magnetic configuration by subtracting the parallel components.
 
-        :return:
+        :param flatten: (bool) whether to return a 3N array or a (3,N) array
+        :return: the gradient in tangent space (with dimensionality 3N).
         """
         grad = self.gradient()
-        return np.asarray([grad[i] - np.dot(grad[i], s) * s for i, s in enumerate(self._spins)])
+        if flatten:
+            np.asarray([grad[i] - np.dot(grad[i], s) * s for i, s in enumerate(self._spins)]).flatten()
+        else:
+            return np.asarray([grad[i] - np.dot(grad[i], s) * s for i, s in enumerate(self._spins)])
         # return grad - np.linalg.vd(grad,self._spins)*grad
 
     def gradient_tspace_2N(self) -> np.ndarray:
@@ -87,14 +93,27 @@ class Magnetization:
             basis[:, 1, idx] = eta
         return basis
 
-    def project_to_basis(self, vec_embedding_space) -> np.ndarray:
+    def project_to_basis(self, vec_embedding_space: np.ndarray, flatten: bool = False) -> np.ndarray:
         r"""
-        Takes a 3N vector from embedding space (shape (N,3)) and projects it to tangent space (shape (N,2) by
+        Takes a 3N vector from embedding space (shape (3,N)) and projects it to tangent space (shape (2,N) by
         calculating basis[:,:,i] * vec[:,i]
-        :param vec_embedding_space:
-        :return:
+
+        :param vec_embedding_space: vector in the 3N embedding space of the magnetization. Its shape is (3,N), with
+            v = [[v_1x,v_1y,v_1z],...,[v_Nx,v_Ny,v_Nz]].
+        :param flatten: whether the return shape is (2,N) or (2N)
+        :return: vector in the local 2N tangent space of the magnetization. Its shape is (2,N), with
+            v = [[v_1xi_1,v_1nu_1],...,[v_Nxi_N,v_Nnu_N]] or (2N) [v_1xi_1,v_1nu_1,...,v_Nxi_N,v_Nnu_N] depending on
+            the value of `flatten`.
         """
         l_basis = self.basis()
+        vec_tangent_space = np.zeros(shape=(2, len(vec_embedding_space)))
+        for idx, vec_i in enumerate(vec_embedding_space):
+            basis_i = l_basis[:, :, idx]
+            vec_tangent_space[:, idx] = basis_i.T @ vec_i
+        if flatten:
+            return vec_tangent_space.flatten()
+        else:
+            return vec_tangent_space
 
     @classmethod
     def retraction(cls, current_mag: 'Magnetization', vec_tspace: np.ndarray,
@@ -125,9 +144,19 @@ class Magnetization:
             rotated_spins[idx, :] = rotated_spins[idx, :] / np.linalg.norm(rotated_spins[idx, :])
         return cls(points=current_mag.points, spins=rotated_spins)
 
-    def parallel_transport(self, vec_to_be_transported: np.ndarray, vec_tspace: np.ndarray,
-                           displacement_parameter: float = 1.0) -> np.ndarray:
-        pass
+    @classmethod
+    def parallel_transport(cls, transport_vec: np.ndarray, vec_tspace: np.ndarray, displacement_parameter: float = 1.0) \
+            -> np.ndarray:
+        r"""
+        Applies parallel transport of a vector.
+
+        :param transport_vec: The vector supposed to be transported
+        :param vec_tspace: The vector in the same tangent space that the transport_vec is supposed to be in.
+        :param displacement_parameter: The displacement parameter
+        :return: transported vector.
+        """
+        # @todo
+
 
     @property
     def points(self) -> np.ndarray:
