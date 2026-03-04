@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from prototype.magnetization import magnetization
+from prototype.magnetization import Magnetization
 
 
 df = pd.read_csv(Path.cwd() / "test_config.csv")
@@ -10,10 +10,13 @@ df = pd.read_csv(Path.cwd() / "test_config.csv")
 points = np.column_stack((df["x"].to_numpy(),df["y"].to_numpy(),df["z"].to_numpy()))
 spins = np.column_stack((df["sx"].to_numpy(),df["sy"].to_numpy(),df["sz"].to_numpy()))
 
-mag = magnetization(points=points,spins=spins)
+mag = Magnetization(points=points,spins=spins)
 
+print(np.shape(mag.spins))
+print(np.shape(mag.spins[1,:]))
+"""
 print(mag.energy())
 print(mag.gradient())
 print(mag.basis())
 print(mag.basis()[:,:,0])
-print(mag.gradient_tspace_2N())
+print(mag.gradient_tspace_2N())"""

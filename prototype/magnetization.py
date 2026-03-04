@@ -145,17 +145,29 @@ class Magnetization:
         return cls(points=current_mag.points, spins=rotated_spins)
 
     @classmethod
-    def parallel_transport(cls, transport_vec: np.ndarray, vec_tspace: np.ndarray, displacement_parameter: float = 1.0) \
+    def parallel_transport(cls, current_mag: 'Magnetization', transport_vec: np.ndarray, vec_tspace: np.ndarray, displacement_parameter: float = 1.0) \
             -> np.ndarray:
         r"""
         Applies parallel transport of a vector.
 
+        :param current_mag: Magnetization instance with current orientation of magnetic moments
         :param transport_vec: The vector supposed to be transported
         :param vec_tspace: The vector in the same tangent space that the transport_vec is supposed to be in.
         :param displacement_parameter: The displacement parameter
         :return: transported vector.
         """
+        rotated_vec = np.zeros_like(transport_vec)
+        for (idx, vec) in enumerate(transport_vec):
+            angle_i = np.linalg.norm(vec_tspace[idx])
+            rotation_axis_i = np.cross(current_mag._spins[idx], vec_tspace[idx])
+            if angle_i == 0.0:
+                rotated_vec[idx] = vec
+                continue
+            if True:
+                pass
         # @todo
+
+
 
 
     @property
@@ -172,4 +184,4 @@ class Magnetization:
 
         :return:
         """
-        return self.spins
+        return self._spins
