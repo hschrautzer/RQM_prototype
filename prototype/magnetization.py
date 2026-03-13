@@ -322,6 +322,61 @@ class Magnetization:
         g_tan = _view_n3(self.gradient_tspace_3N())
         return self.project_to_basis(g_tan)
 
+    def finite_difference_HX(self, X: np.ndarray, technique: str = "simple_fd", eps: float = 1.0e-6) -> np.ndarray:
+        r"""
+        Calculate action of the Hessian on X using finite differences
+
+        :param X: current estimate of lowest subspace
+        :param technique: the finite difference technique, currently implemented are:
+            - "simple_fd": simple forward finite difference
+        :param eps: displacement parameter
+        :return: the action of the Hessian
+        """
+        shape = np.shape(X)
+        dim_subspace = shape[2]
+        HX = np.zeros_like(X)
+        for p in range(dim_subspace):
+            if technique == "simple_fd":
+                HX[:, p] = self.fd_simple_HcolX(x=X[:, p], eps=eps)
+            else:
+                raise NotImplementedError("Finite difference procedure not yet coded.")
+        return HX
+
+    def fd_simple_HcolX(self, x: np.ndarray, eps: float) -> np.ndarray:
+        r"""
+        Computes finite difference action of the Hessian applied to a column of X.
+        To avoid frequent basis changes we will do this computation in 3N embedding space. So the procedure is the
+        following:
+            - Compute the 3N representation of the gradient of the magnetization (however, this is tangent to mag.)
+            - Lift the column vector x from the tangent space to the embedding space (3N)
+            - Rotate the magnetization along the tangent direction that is provided by x_3N
+            - Compute the gradient of the displaced magnetization
+            - Transport this gradient to the tangent space of the not-displaced original magnetization
+            - Compute the finite-difference of the gradients
+            - Project to 2N tangent space representation
+
+        Note: This is the naive implementation of a simple forward finite difference scheme with a fixed step. Other,
+        more sophisticated schemes can be found as well in this class.
+
+        :param x: A 2N-dimensional flattened column of X
+        :param eps: The displacement parameter
+        :return: The finite-difference approximation of H*x (of shape (2N))
+        """
+        grad_3N = self.gradient_tspace_3N()
+        x_3N = self.lift_from_basis(vec_tangent_coords=x)
+        mag_displaced = Magnetization.retraction(current_mag=self, vec_tspace=x_3N, displacement_parameter=eps)
+        grad_3N_displaced = mag_displaced.gradient_tspace_3N()
+        grad_3N_displaced_transported = Magnetization.parallel_transport(current_mag=mag_displaced,
+                                                                         transport_vec=x_3N,
+                                                                         vec_tspace=grad_3N_displaced,
+                                                                         displacement_parameter=-1.0 * eps)
+        fin_diff_3N = (grad_3N_displaced_transported - grad_3N) / eps
+        Hx_2N = self.project_to_basis(vec_embedding_space=fin_diff_3N)
+        return Hx_2N
+
+
+    def fd_richardson_HcolX(self, x):
+            #@todo
     # -------------------------
     # Retraction / parallel transport
     # -------------------------
