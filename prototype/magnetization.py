@@ -23,8 +23,10 @@ def _as_flat_3n(x: np.ndarray, *, name: str) -> np.ndarray:
         return x.reshape(-1).copy()
     raise ValueError(f"{name} must have shape (3N,) or (N,3), got {x.shape}")
 
+
 def _view_n3(x_flat: np.ndarray) -> np.ndarray:
     return x_flat.reshape((-1, 3))
+
 
 def _normalize_rows(x_n3: np.ndarray, eps: float = 1e-15) -> np.ndarray:
     n = np.linalg.norm(x_n3, axis=1)
@@ -49,6 +51,7 @@ def _rodrigues_rotate(v_n3: np.ndarray, k_n3: np.ndarray, theta: np.ndarray) -> 
     k_dot_v = np.sum(k_n3 * v_n3, axis=1)[:, None]
     return v_n3 * ct + kv * st + k_n3 * k_dot_v * (1.0 - ct)
 
+
 class Magnetization:
     """
     Magnetization on (S^2)^N with open boundaries.
@@ -59,8 +62,8 @@ class Magnetization:
     Provides views as (N,3) via points_n3 / spins_n3 properties.
     """
 
-    def __init__(self,points: np.ndarray,spins: np.ndarray,*,exchange_constant: float = 1.0,
-                 lattice_constant: float = 1.0,k_neighbors: int = 4,normalize_spins: bool = True,
+    def __init__(self, points: np.ndarray, spins: np.ndarray, *, exchange_constant: float = 1.0,
+                 lattice_constant: float = 1.0, k_neighbors: int = 4, normalize_spins: bool = True,
                  rebuild_neighbors: bool = True) -> None:
         """
         :param points: (3N,) or (N,3)
@@ -153,11 +156,11 @@ class Magnetization:
             self.rebuild_neighbor_list()
 
     def copy(self) -> "Magnetization":
-        out = Magnetization(points=self._points.copy(),spins=self._spins.copy(),
-                            exchange_constant=self._exchange_constant,lattice_constant=self._lattice_constant,
-                            k_neighbors=self._k_neighbors,normalize_spins=False,    # already normalized
-                            rebuild_neighbors=False,                                # we'll copy neighbor data if present
-        )
+        out = Magnetization(points=self._points.copy(), spins=self._spins.copy(),
+                            exchange_constant=self._exchange_constant, lattice_constant=self._lattice_constant,
+                            k_neighbors=self._k_neighbors, normalize_spins=False,  # already normalized
+                            rebuild_neighbors=False,  # we'll copy neighbor data if present
+                            )
         if self._kdtree is not None:
             out._kdtree = self._kdtree  # safe to share (points immutable unless set_points called)
         if self._neighbors is not None:
@@ -187,6 +190,7 @@ class Magnetization:
                 )
             neigh[i] = row[: self._k_neighbors]
         self._neighbors = neigh
+
     def neighbors(self, i: int) -> np.ndarray:
         """Neighbor indices of site i, shape (k_neighbors,)."""
         if self._neighbors is None:
@@ -322,7 +326,7 @@ class Magnetization:
     # Retraction / parallel transport
     # -------------------------
     @classmethod
-    def retraction(cls,current_mag: "Magnetization",vec_tspace: np.ndarray,displacement_parameter: float = 1.0,
+    def retraction(cls, current_mag: "Magnetization", vec_tspace: np.ndarray, displacement_parameter: float = 1.0,
                    rodrigues_threshold: float = 1.0e-8) -> "Magnetization":
         """
         Retraction using the exact exponential map on S^2, applied sitewise.
@@ -359,18 +363,19 @@ class Magnetization:
         out = _normalize_rows(out)
 
         # Keep same geometry/neighbor settings; points unchanged
-        new_obj = cls(points=current_mag.points.copy(),spins=out.reshape(-1),
-                      exchange_constant=current_mag.exchange_constant,lattice_constant=current_mag.lattice_constant,
-                      k_neighbors=current_mag.k_neighbors,normalize_spins=False,rebuild_neighbors=False,  # reuse neighbor list for same points
-            )
+        new_obj = cls(points=current_mag.points.copy(), spins=out.reshape(-1),
+                      exchange_constant=current_mag.exchange_constant, lattice_constant=current_mag.lattice_constant,
+                      k_neighbors=current_mag.k_neighbors, normalize_spins=False, rebuild_neighbors=False,
+                      # reuse neighbor list for same points
+                      )
         # Reuse neighbor info safely (same points)
         new_obj._kdtree = current_mag._kdtree
         new_obj._neighbors = None if current_mag._neighbors is None else current_mag._neighbors.copy()
         return new_obj
 
     @classmethod
-    def parallel_transport(cls,current_mag: "Magnetization",transport_vec: np.ndarray,vec_tspace: np.ndarray,
-                           displacement_parameter: float = 1.0,rodrigues_threshold: float = 1.0e-8) -> np.ndarray:
+    def parallel_transport(cls, current_mag: "Magnetization", transport_vec: np.ndarray, vec_tspace: np.ndarray,
+                           displacement_parameter: float = 1.0, rodrigues_threshold: float = 1.0e-8) -> np.ndarray:
         """
         Parallel transport a tangent vector along the geodesic induced by vec_tspace
         (sitewise on S^2). For S^2, this equals rotating the vector by the same
@@ -421,9 +426,7 @@ class Magnetization:
             out[small] = out_small
 
         # Ensure tangency at new spins
-        new_mag = cls.retraction(current_mag,d.reshape(-1),displacement_parameter=1.0,
+        new_mag = cls.retraction(current_mag, d.reshape(-1), displacement_parameter=1.0,
                                  rodrigues_threshold=rodrigues_threshold)
         out = _project_to_tangent(new_mag.spins_n3, out)
         return out.reshape(-1)
-
-
