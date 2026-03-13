@@ -28,10 +28,16 @@ $$
 
 which is first-order accurate in $\epsilon$.
 
-**Note**: The above is not correct since we did not care about the curvature of the spherical manifold our magnetic configuration is living on. Denoting the retraction of $m$ along the direction $x_i$ with the displacement parameter $\epsilon$ by $m'=\mathcal{R}_{\epsilon x_i}(m)$ and the parallel transport of a vector $g$ along the direction $x_i$ with the displacement parameter $\epsilon$ and the anchor $m$ by $\mathcal{P}_{m,\epsilon x_i}(g)$ correctly the above should read:
+**Note**: The above is not correct since we did not care about the curvature of the spherical manifold our magnetic configuration is living on. Denoting the retraction of $m$ along the direction $x_i$ with the displacement parameter $\epsilon$ by $m'=R_{\epsilon x_i}(m)$ and the parallel transport of a vector $g$ along the direction $x_i$ with the displacement parameter $\epsilon$ and the anchor $m$ by $P_{m,\epsilon x_i}(g)$ correctly the above should read:
 
 $$
-Hx_i = U^T \frac{\mathcal{P}_{m',-\epsilon x_i}[g(m')]-g(m)}{\epsilon}+\mathcal{O}(\epsilon)~.
+Hx_i = U^T \frac{P_{m',-\epsilon x_i}[g(m')]-g(m)}{\epsilon}+\mathcal{O}(\epsilon)~.
+$$
+
+The above is implemented in `magnetization.py` as `fd_simple_HcolX()`. However, can we do better than $\epsilon$-accuracy? For that purpose the original implementation in Spinaker uses a Richardson Extrapolation of the finite difference displacement parameter $\epsilon$. Consider The same as above but for a displacement of $\epsilon/2$. For better readability omit the retraction and parallel transport notations in the following:
+
+$$
+H x_i=U^T\frac{g(m+\frac{\epsilon}{2} x_i)-g(m)}{\frac{\epsilon}{2}}+\mathcal{O}(\epsilon)~,
 $$
 
 How can we compute `Hx_i`? The answer is finite differences:
