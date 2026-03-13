@@ -9,10 +9,10 @@ Here we describe the computation of the action of the Hessian $H\in\mathbb{R}^{2
 We compute the action on the individual columns of $X$
 
 $$
-HX=(Hx_1,\dots, Hx_p)~,
+HX=(H\mathbf{x}_1,\dots, H\mathbf{x}_p)~,
 $$
 
-with $x_i\in\mathbb{R}^{2N}$ and $|x_i|=1$. Say $\bm{g}(\bm{m})\in\mathbb{R}^{3N}$ is the energy gradient of a magnetic configuration $\bm{m}=(m_1^x,m_1^y,m_1^z,\dots,m_N^x,m_N^y,m_N^z)\in\mathbb{R}^{2N}$ of $N$ magnetic moments. Note, despite that this gradient is represented in $3N$-dimensional embedding space it is tangent to the magnetic configuration ($\bm{m}\cdot\bm{g}(\bm{m})=0$). It can be projected to the local $2N$-dimensional tangent space using the projection matrix $U\in\mathbb{R}^{3N\times 2N}$ with $\bm{g}_{2N}=U^T\bm{g}\in\mathbb{R}^{2N}$. The gradient is represented in $3N$ embedding space to avoid frequent basis changes in the following.
+with $\mathbf{x}_i\in\mathbb{R}^{2N}$ and $|x_i|=1$. Say $\mathbf{g}(\mathbf{m})\in\mathbb{R}^{3N}$ is the energy gradient of a magnetic configuration $\mathbf{m}=(m_1^x,m_1^y,m_1^z,\dots,m_N^x,m_N^y,m_N^z)\in\mathbb{R}^{2N}$ of $N$ magnetic moments. Note, despite that this gradient is represented in $3N$-dimensional embedding space it is tangent to the magnetic configuration ($\mathbf{m}\cdot\mathbf{g}(\mathbf{m})=0$). It can be projected to the local $2N$-dimensional tangent space using the projection matrix $U\in\mathbb{R}^{3N\times 2N}$ with $\mathbf{g}_{2N}=U^T\mathbf{g}\in\mathbb{R}^{2N}$. The gradient is represented in $3N$ embedding space to avoid frequent basis changes in the following.
 
 The idea to compute the action of the Hessian is now expanding the gradient:
 
