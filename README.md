@@ -34,7 +34,38 @@ $$
 Hx_i = U^T \frac{P_{m',-\epsilon x_i}[g(m')]-g(m)}{\epsilon}+\mathcal{O}(\epsilon)~.
 $$
 
-The above is implemented in `magnetization.py` as `fd_simple_HcolX()`. However, can we do better than $\epsilon$-accuracy? For that purpose the original implementation in Spinaker uses a Richardson Extrapolation of the finite difference displacement parameter $\epsilon$. Consider The same as above but for a displacement of $\epsilon/2$. For better readability omit the retraction and parallel transport notations in the following:
+The above is implemented in `magnetization.py` as `fd_simple_HcolX()`. However, can we do better than $\epsilon$-accuracy? For that purpose the original implementation in Spinaker uses a Richardson Extrapolation of the finite difference displacement parameter $\epsilon$. For better readability omit the retraction and parallel transport notations in the following.
+
+Consider now two times the same taylor expansion but once for $\epsilon$ and once for $\epsilon/2$:
+
+$$
+Hx_i=U^T\frac{g(m+\epsilon x_i)-g(m)}{\epsilon}+C\epsilon+\mathcal{O}(\epsilon^2)=A(\epsilon)+\mathcal{O}(\epsilon^2)\\
+Hx_i=U^T\frac{g(m+\frac{\epsilon}{2}x_i)-g(m)}{\epsilon/2}+C\frac{\epsilon}{2}+\mathcal{O}(\epsilon^2)=A(\epsilon/2)+\mathcal{O}(\epsilon^2)~,
+$$
+
+where $C$ is some constant yielding the value of the third derivative of the energy and representing the linear error of this scheme and $A(\epsilon)$ represents the approximation including the linear error. This linear error can be eliminated by computing
+
+$$
+Hx_i = 2A(\epsilon/2)-A(\epsilon)+\mathcal{O}(\epsilon^2)~.
+$$
+
+The benefit is that we can estimate the absolute error of this approximation by
+
+$$
+e(\epsilon/2)\approx ||A(\epsilon/2)-A(\epsilon)||~.
+$$
+
+Therefore in practice one can define a maximum allowed absolute error that the finite difference calculation may have. Let's say this desired error is $e_R$ and that we started with some $\epsilon$ and $e(\epsilon/2)>e_R$. With $e(\epsilon/2)= C\frac{\epsilon}{2}+\mathcal{O}(\epsilon^2)$ we have $C\approx \frac{2e(\epsilon/2)}{\epsilon}$ the new step to reach the desired error might be:
+
+$$
+\epsilon_{new}= 
+$$
+
+**Note from Hendrik to Hendrik**: It seems that my error reduction scheme in spinaker thinks that the accuracy of the scheme is p=2 while it is p=1 in reality. Do I want to fix that?
+
+**Note**: This is of course not perfect. If I would have to do this again, I would consider a central-finite difference scheme using Richardson Extrapolation and use of course an estimate of the relative error.
+
+
 
 $$
 H x_i=U^T\frac{g(m+\frac{\epsilon}{2} x_i)-g(m)}{\frac{\epsilon}{2}}+\mathcal{O}(\epsilon)~,
