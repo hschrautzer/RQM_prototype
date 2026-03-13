@@ -4,8 +4,7 @@ Prototype for Rayleigh Quotient Minimization
 
 ## Finite Difference Part
 
-The computation of the action of the Hessian $H\in\mathbbÖÄ$  (2N by 2N) on the thin matrix orthonormal `X` (2N by p) first is
-separated into the contributions of the individual columns of $`X=(x_1,...,x_p)`$: `Hx_i`with `xi`beeing of dimension 2N.
+Here we describe the computation of the action of the Hessian $H\in\mathbb{R}^{2N\times 2N}$ on the thin orthonormal matrix $X\in\mathbb{R}^{2N\times p}$ , where $p$ indicates the dimension of the subspace of $H$ that the RQM method is trying to estimate.
 
 How can we compute `Hx_i`? The answer is finite differences:
 
