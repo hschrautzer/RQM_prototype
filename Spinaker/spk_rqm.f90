@@ -973,7 +973,7 @@ module spk_rqm
             if (i_info_out_local) close(io)
         end subroutine rqm_grassmann_information
 
-        subroutine rqm_grassmann_subsystem_performance(spin,basis,subsys_indices,p,v_ini,v_fin,rqm_settings,evals,rqm_iterations)
+        subroutine rqm_grassmann_subsystem_performance(spin,basis,subsys_indices,N_modes,v_ini,v_fin,rqm_settings,evals,rqm_iterations)
             !> This routine performs an optimization routine on the Grassmann Manifold with the objective function
             !> tr X^T H X, where H is the Hessian of the spin configuration and X is a 2N x p matrix representative
             !> for an equivalence class of matrices on the Stiefel manifold corresponding to one point on the
@@ -984,7 +984,7 @@ module spk_rqm
             real(kind=xp), intent(in) :: spin(:)                                    !< Spin Configuration
             real(kind=xp), intent(in) :: basis(:,:,:)                               !< Basis of Tangent Space of Spin
             integer, intent(in) :: subsys_indices(:)                                !< Indices of atoms in subsystem
-            integer, intent(in) :: p                                                !< Dimension of the subspace
+            integer, intent(in) :: N_modes                                                !< Dimension of the subspace
             real(kind=xp), intent(in) :: v_ini(:,:)                                 !< Start Vector for RQM (3N)
             type(rqm_params), intent(in) :: rqm_settings                            !< Parameter Container for RQM
             !================================Output Variable========================================================
@@ -998,7 +998,7 @@ module spk_rqm
             integer :: p_iter, p_iter2                                              !< Iteration for Subspace Dim.
             real(kind=xp), allocatable :: dummyvec3N(:),dummyvec3N_2(:),dummyvec2N(:)!< Dummy Vectors
             real(kind=xp) :: dummyval                                               !< Dummy Value
-            real(kind=xp) :: rq_matrix(p,p)                                         !< Matrix X^T * H * X
+            real(kind=xp) :: rq_matrix(N_modes,p)                                         !< Matrix X^T * H * X
             real(kind=xp), allocatable :: HX_findiff(:)                             !< Finite difference approximation
                                                                                         !< of the matrix-vector product
             real(kind=xp), allocatable :: rq_gradient(:)                            !< Gradient of Rayleigh Quotient
@@ -1009,12 +1009,12 @@ module spk_rqm
             real(kind=xp) :: rq_gradient_norm                                       !< Norm of the Ralyeigh Gradient G
                                                                                     !< sqrt(tr(G^T G))
             real(kind=xp) :: rq
-            real(kind=xp) :: rayleighritz_evec(p,p)                                 !< Eigenvalues and Eigenvector of
+            real(kind=xp) :: rayleighritz_evec(N_modes,p)                                 !< Eigenvalues and Eigenvector of
                                                                                         !< Rayleigh Ritz Procedure
             real(kind=xp), allocatable :: U(:,:), S(:), VT(:,:)                     !< thin SVD of rq_step_2d
             real(kind=xp), allocatable :: T(:,:)                                    !< Parallel transport matrix
             !------------------------------FD Information---------------------------------------------------------------
-            real(kind=xp) :: fd_step_used(p)                                        !< Finite Difference Step used (only
+            real(kind=xp) :: fd_step_used(N_modes)                                        !< Finite Difference Step used (only
                                                                                     !< needed in case of Richardson-FD)
             !------------------------------Algorithm Depending Variables------------------------------------------------
             ! Depending on which algorithm is chosen one might need different local variable, they will be only
@@ -1042,26 +1042,26 @@ module spk_rqm
             allocate(dummyvec2N(2*N))                       ! Dummy 2N vector
             allocate(dummyvec3N(3*N))                       ! Dummy 3N vector
             allocate(dummyvec3N_2(3*N))                     ! Dummy 3N vector
-            allocate(X(2*N,p),X_previous(2*N,p))            ! Optimization quantity
-            allocate(HX_findiff(2*N*p))                     ! Store the 2N x p Matrix as 1D array
-            allocate(rq_gradient(2*N*p))                    ! Gradientmatrix (2N x p) of the RQ as 1D
-            allocate(rq_gradient_2d(2*N,p))                 ! Gradientmatrix (2N x p) of the RQ as 1D
-            allocate(rq_force(2*N*p))                       ! Forcematrix (2N x p) of the RQ as 1D
-            allocate(rq_step(2*N*p))                        ! Stepmatrix (2N x p) of the RQ as 1D
-            allocate(rq_step_2d(2*N,p))                     ! Stepmatrix (2N x p) of the RQ as 2D
-            allocate(T(2*N,p),U(2*N,p),VT(p,p),S(p))        ! Transport matrix and thin SVD of rq_step_2d
+            allocate(X(2*N,N_modes),X_previous(2*N,N_modes))            ! Optimization quantity
+            allocate(HX_findiff(2*N*N_modes))                     ! Store the 2N x p Matrix as 1D array
+            allocate(rq_gradient(2*N*N_modes))                    ! Gradientmatrix (2N x p) of the RQ as 1D
+            allocate(rq_gradient_2d(2*N,N_modes))                 ! Gradientmatrix (2N x p) of the RQ as 1D
+            allocate(rq_force(2*N*N_modes))                       ! Forcematrix (2N x p) of the RQ as 1D
+            allocate(rq_step(2*N*N_modes))                        ! Stepmatrix (2N x p) of the RQ as 1D
+            allocate(rq_step_2d(2*N,N_modes))                     ! Stepmatrix (2N x p) of the RQ as 2D
+            allocate(T(2*N,N_modes),U(2*N,N_modes),VT(N_modes,p),S(N_modes))        ! Transport matrix and thin SVD of rq_step_2d
             !.............................Prepare Solver............................................................
             select case(rqm_settings%rqm_solver%solver)
                 case(INTEGRATOR_VPO)
-                    allocate(vpo_velocity(2*N*p),vpo_b(2*N*p))
+                    allocate(vpo_velocity(2*N*N_modes),vpo_b(2*N*N_modes))
                     vpo_velocity = 0.0d0
                     vpo_b = 0.0d0
                 case(INTEGRATOR_LBFGS)
-                    allocate(lbfgs_d(2*N*p,rqm_settings%rqm_solver%lbfgs_memory),lbfgs_y(2*N*p,&
+                    allocate(lbfgs_d(2*N*N_modes,rqm_settings%rqm_solver%lbfgs_memory),lbfgs_y(2*N*N_modes,&
                             & rqm_settings%rqm_solver%lbfgs_memory), lbfgs_rho(rqm_settings%rqm_solver%lbfgs_memory), &
                             & lbfgs_gamma(rqm_settings%rqm_solver%lbfgs_memory))
-                    allocate(lbfgs_previous_force(2*N*p), lbfgs_current_step(2*N*p),lbfgs_previous_step(2*N*p))
-                    allocate(lbfgs_Hstep(2*N,p),lbfgs_linesearchdummy(2*N,p))
+                    allocate(lbfgs_previous_force(2*N*N_modes), lbfgs_current_step(2*N*N_modes),lbfgs_previous_step(2*N*N_modes))
+                    allocate(lbfgs_Hstep(2*N,N_modes),lbfgs_linesearchdummy(2*N,N_modes))
                     lbfgs_steplength = 1.0d0
                     lbfgs_previous_force = 0.0d0
                     rho = 0.5d0
@@ -1075,7 +1075,7 @@ module spk_rqm
             X = 0.0d0
             evals = 0.0d0
             ! Initialize 2N x p matrix X
-            do p_iter=1,p
+            do p_iter=1,N_modes
                 call vec_to_tangentspace(basis,v_ini(:,p_iter),dummyvec2N)
                 X(:,p_iter) = dummyvec2N / norm(dummyvec2N)
             end do
@@ -1087,13 +1087,13 @@ module spk_rqm
             if (rqm_settings%fd_settings%i_richardson) then
                 select case(rqm_settings%fd_settings%scheme)
                     case(FD_SCHEME_FORWARD)
-                        do p_iter=1,p
+                        do p_iter=1,N_modes
                             call vec_to_embeddingspace(basis,N,X(:,p_iter),dummyvec3N)
                             call fd_hessvec_forward(spin,dummyvec3N,subsys_indices, &
                                     & rqm_settings%fd_settings%richardson_error,rqm_settings%fd_settings%step,dummyval,&
                                     & dummyvec3N_2,rqm_settings%fd_settings%richardson_iter)
                             call vec_to_tangentspace(basis,dummyvec3N_2,dummyvec2N)
-                            fd_step_used(p) = dummyval
+                            fd_step_used(N_modes) = dummyval
                             HX_findiff(2*N*(p_iter-1)+1:2*N*p_iter) = dummyvec2N
                         end do
                     case(FD_SCHEME_BACKWARD)
@@ -1106,7 +1106,7 @@ module spk_rqm
             else
                 select case(rqm_settings%fd_settings%scheme)
                     case(FD_SCHEME_FORWARD)
-                        do p_iter=1,p
+                        do p_iter=1,N_modes
                             call vec_to_embeddingspace(basis,N, X(:,p_iter), dummyvec3N)
                             call fd_hessvec_forward(spin, rqm_settings%fd_settings%step,subsys_indices, &
                                     & rqm_settings%fd_settings%order, dummyvec3N, dummyvec3N_2)
@@ -1125,22 +1125,22 @@ module spk_rqm
 
             ! Compute Rayleigh Matrix X^T H X
             rq_matrix = 0.0d0
-            do p_iter=1,p
-                do p_iter2=1,p
+            do p_iter=1,N_modes
+                do p_iter2=1,N_modes
                     ! col idx, row idx
                     rq_matrix(p_iter,p_iter2) = DOT_PRODUCT(X(:,p_iter),HX_findiff(2*N*(p_iter2-1)+1:2*N*p_iter2))
                 end do
             end do
             ! The Rayleigh Quotient is the trace of the subspace matrix X^T H X
             rq = 0.0d0
-            do p_iter=1,p
+            do p_iter=1,N_modes
                 rq = rq + rq_matrix(p_iter,p_iter)
             end do
 
             ! The gradient is given by 2 H X - 2 X (X^T H X) and is a 2N x p Matrix
             rq_gradient = HX_findiff
-            do p_iter=1,p
-                do p_iter2=1,p
+            do p_iter=1,N_modes
+                do p_iter2=1,N_modes
                     rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter) = rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter) &
                             & - rq_matrix(p_iter2,p_iter) * X(:,p_iter2)
                 end do
@@ -1148,14 +1148,14 @@ module spk_rqm
             rq_gradient = rq_gradient * 2.0d0
 
             ! Change representation of Gradient to a 2N x p matrix:
-            do p_iter=1,p
+            do p_iter=1,N_modes
                 rq_gradient_2d(:,p_iter) = rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter)
             end do
 
             ! Compute the norm of the Gradient which is given by the Frobenius Norm:
             ! sqrt(tr(G^T*G)) = sqrt(g_1^2 + ... + g_p^2)
             rq_gradient_norm = 0.0d0
-            do p_iter=1,p
+            do p_iter=1,N_modes
                 rq_gradient_norm = rq_gradient_norm + DOT_PRODUCT(rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter),&
                         & rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter))
             end do
@@ -1179,14 +1179,14 @@ module spk_rqm
                     case(INTEGRATOR_EULER)
                         call euler_step(rq_force,rqm_settings%rqm_solver%euler_dt,rq_step)
                         ! Change representation of Step:
-                        do p_iter=1,p
+                        do p_iter=1,N_modes
                             rq_step_2d(:,p_iter) = rq_step(2*N*(p_iter-1)+1:2*N*p_iter)
                         end do
                     case(INTEGRATOR_VPO)
                         call vpo_step(vpo_velocity,rq_force, vpo_b, rqm_settings%rqm_solver%vpo_mass, &
                                 & rqm_settings%rqm_solver%vpo_dt, rq_step)
                         ! Change representation of Step:
-                        do p_iter=1,p
+                        do p_iter=1,N_modes
                             rq_step_2d(:,p_iter) = rq_step(2*N*(p_iter-1)+1:2*N*p_iter)
                         end do
                     case(INTEGRATOR_LBFGS)
@@ -1198,7 +1198,7 @@ module spk_rqm
                         lbfgs_previous_steplength = lbfgs_steplength
                         lbfgs_previous_step = rq_step
                         ! Change representation of Step:
-                        do p_iter=1,p
+                        do p_iter=1,N_modes
                             rq_step_2d(:,p_iter) = rq_step(2*N*(p_iter-1)+1:2*N*p_iter) * lbfgs_steplength
                         end do
                         ! Simple Armijo Linesearch
@@ -1207,7 +1207,7 @@ module spk_rqm
                             rightside = innerproduct_frobenius(rq_step_2d,rq_gradient_2d)
                             rightside = rightside *c*alpha
                             !Left side computation
-                            do p_iter=1,p
+                            do p_iter=1,N_modes
                                 call vec_to_embeddingspace(basis,N, rq_step_2d(:,p_iter), dummyvec3N)
                                 call fd_hessvec_forward(spin, dummyvec3N,subsys_indices,&
                                         & rqm_settings%fd_settings%richardson_error, rqm_settings%fd_settings%step,  &
@@ -1229,7 +1229,7 @@ module spk_rqm
                                 rightside = innerproduct_frobenius(rq_step_2d,rq_gradient_2d)
                                 rightside = rightside *c*alpha
                                 !Left side computation
-                                do p_iter=1,p
+                                do p_iter=1,N_modes
                                     call vec_to_embeddingspace(basis,N, rq_step_2d(:,p_iter), dummyvec3N)
                                     call fd_hessvec_forward(spin, dummyvec3N,subsys_indices, &
                                             & rqm_settings%fd_settings%richardson_error,rqm_settings%fd_settings%step,  &
@@ -1290,13 +1290,13 @@ module spk_rqm
                 if (rqm_settings%fd_settings%i_richardson) then
                     select case(rqm_settings%fd_settings%scheme)
                         case(FD_SCHEME_FORWARD)
-                            do p_iter=1,p
+                            do p_iter=1,N_modes
                                 call vec_to_embeddingspace(basis,N, X(:,p_iter), dummyvec3N)
                                 call fd_hessvec_forward(spin, dummyvec3N,subsys_indices, &
                                         & rqm_settings%fd_settings%richardson_error, rqm_settings%fd_settings%step,  &
                                         & dummyval, dummyvec3N_2, rqm_settings%fd_settings%richardson_iter)
                                 call vec_to_tangentspace(basis,dummyvec3N_2,dummyvec2N)
-                                fd_step_used(p) = dummyval
+                                fd_step_used(N_modes) = dummyval
                                 HX_findiff(2*N*(p_iter-1)+1:2*N*p_iter) = dummyvec2N
                             end do
                         case(FD_SCHEME_BACKWARD)
@@ -1309,7 +1309,7 @@ module spk_rqm
                 else
                     select case(rqm_settings%fd_settings%scheme)
                         case(FD_SCHEME_FORWARD)
-                            do p_iter=1,p
+                            do p_iter=1,N_modes
                                 call vec_to_embeddingspace(basis,N, X(:,p_iter), dummyvec3N)
                                 call fd_hessvec_forward(spin, rqm_settings%fd_settings%step, subsys_indices, &
                                         & rqm_settings%fd_settings%order, dummyvec3N, &
@@ -1328,21 +1328,21 @@ module spk_rqm
 
                 ! Compute Rayleigh Matrix X^T H X
                 rq_matrix = 0.0d0
-                do p_iter=1,p
-                    do p_iter2=1,p
+                do p_iter=1,N_modes
+                    do p_iter2=1,N_modes
                         ! col idx, row idx
                         rq_matrix(p_iter,p_iter2) = DOT_PRODUCT(X(:,p_iter),HX_findiff(2*N*(p_iter2-1)+1:2*N*p_iter2))
                     end do
                 end do
                 ! The Rayleigh Quotient is the trace of the subspace matrix X^T H X
                 rq = 0.0d0
-                do p_iter=1,p
+                do p_iter=1,N_modes
                     rq = rq + rq_matrix(p_iter,p_iter)
                 end do
                 ! The gradient is given by H X - X (X^T H X) and is a 3N x p Matrix
                 rq_gradient = HX_findiff
-                do p_iter=1,p
-                    do p_iter2=1,p
+                do p_iter=1,N_modes
+                    do p_iter2=1,N_modes
                         rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter) = rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter) &
                                 & - rq_matrix(p_iter2,p_iter) * X(:,p_iter2)
                     end do
@@ -1350,13 +1350,13 @@ module spk_rqm
                 rq_gradient = rq_gradient * 2.0d0
 
                 ! Change representation of Gradient:
-                do p_iter=1,p
+                do p_iter=1,N_modes
                     rq_gradient_2d(:,p_iter) = rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter)
                 end do
                 ! Compute the norm of the Gradient which is given by the Frobenius Norm:
                 ! sqrt(tr(G^T*G)) = sqrt(g_1^2 + ... + g_p^2)
                 rq_gradient_norm = 0.0d0
-                do p_iter=1,p
+                do p_iter=1,N_modes
                     rq_gradient_norm = rq_gradient_norm + DOT_PRODUCT(rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter),&
                             & rq_gradient(2*N*(p_iter-1)+1:2*N*p_iter))
                 end do
@@ -1374,9 +1374,9 @@ module spk_rqm
             rayleighritz_evec = rq_matrix
             call syev(rayleighritz_evec,evals,jobz="V")
             v_fin = 0.0d0
-            do p_iter=1,p
+            do p_iter=1,N_modes
                 dummyvec2N = 0.0d0
-                do p_iter2=1,p
+                do p_iter2=1,N_modes
                     dummyvec2N = dummyvec2N + X(:,p_iter2) * rayleighritz_evec(p_iter2,p_iter)
                 end do
                 call vec_to_embeddingspace(basis,N, dummyvec2N, v_fin(:,p_iter))

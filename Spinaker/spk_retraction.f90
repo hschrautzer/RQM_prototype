@@ -1,5 +1,5 @@
 module spk_retraction
-    !> Module contains reatraction routines for optimizations on Riemannian Manifolds, which is a generalization of the
+    !> Module contains retraction routines for optimizations on Riemannian Manifolds, which is a generalization of the
     !> Linesearch procedure X_k+1 = X_k + t_k * DX_k. On Riemmannian Manifolds the exact way to perform this update
     !> is the exponential map, which might have closed forms depending on the specific manifolds. The other way is to
     !> think of the current iterate and the search direction eta_k, which is in the tangent space of X_k, of being em-
