@@ -9,29 +9,29 @@ Here we describe the computation of the action of the Hessian $H\in\mathbb{R}^{2
 We compute the action on the individual columns of $X$
 
 $$
-HX=(H\mathbf{x}_1,\dots, H\mathbf{x}_p)~,
+HX=(Hx_1,\dots, Hx_p)~,
 $$
 
-with $\mathbf{x}_i\in\mathbb{R}^{2N}$ and $|x_i|=1$. Say $\mathbf{g}(\mathbf{m})\in\mathbb{R}^{3N}$ is the energy gradient of a magnetic configuration $\mathbf{m}=(m_1^x,m_1^y,m_1^z,\dots,m_N^x,m_N^y,m_N^z)\in\mathbb{R}^{2N}$ of $N$ magnetic moments. Note, despite that this gradient is represented in $3N$-dimensional embedding space it is tangent to the magnetic configuration ($\mathbf{m}\cdot\mathbf{g}(\mathbf{m})=0$). It can be projected to the local $2N$-dimensional tangent space using the projection matrix $U\in\mathbb{R}^{3N\times 2N}$ with $\mathbf{g}_{2N}=U^T\mathbf{g}\in\mathbb{R}^{2N}$. The gradient is represented in $3N$ embedding space to avoid frequent basis changes in the following.
+with $x_i\in\mathbb{R}^{2N}$ and $|x_i|=1$. Say $g(m)\in\mathbb{R}^{3N}$ is the energy gradient of a magnetic configuration $m=(m_1^x,m_1^y,m_1^z,\dots,m_N^x,m_N^y,m_N^z)\in\mathbb{R}^{2N}$ of $N$ magnetic moments. Note, despite that this gradient is represented in $3N$-dimensional embedding space it is tangent to the magnetic configuration ($m\cdot g(m)=0$). It can be projected to the local $2N$-dimensional tangent space using the projection matrix $U\in\mathbb{R}^{3N\times 2N}$ with $g_{2N}=U^Tg\in\mathbb{R}^{2N}$. The gradient is represented in $3N$ embedding space to avoid frequent basis changes in the following.
 
 The idea to compute the action of the Hessian is now expanding the gradient:
 
 $$
-\bm{g}(\bm{m}+\epsilon\bm{x}_i)= \bm{g}(\bm{m})+U\epsilon H\bm{x}_i+\mathcal{O}(\epsilon^2)~,
+g(m+\epsilon x_i)= g(m)+U\epsilon H x_i+\mathcal{O}(\epsilon^2)~,
 $$
 
 with a small displacement parameter $\epsilon$. Re-arranging yields:
 
 $$
-H\bm{x}_i=U^T\frac{\bm{g}(\bm{m}+\epsilon\bm{x}_i)-\bm{g}(\bm{m})}{\epsilon}+\mathcal{O}(\epsilon)~,
+H x_i=U^T\frac{g(m+\epsilon x_i)-g(m)}{\epsilon}+\mathcal{O}(\epsilon)~,
 $$
 
 which is first-order accurate in $\epsilon$.
 
-**Note**: The above is not correct since we did not care about the curvature of the spherical manifold our magnetic configuration is living on. Denoting the retraction of $\bm{m}$ along the direction $\bm{x}_i$ with the displacement parameter $\epsilon$ by $\bm{m}'=\mathcal{R}_{\epsilon\bm{x}_i}(\bm{m})$ and the parallel transport of a vector $\bm{g}$ along the direction $\bm{x}_i$ with the displacement parameter $\epsilon$ and the anchor $\bm{m}$ by $\mathcal{P}_{\bm{m},\epsilon\bm{x}_i}(\bm{g})$ correctly the above should read:
+**Note**: The above is not correct since we did not care about the curvature of the spherical manifold our magnetic configuration is living on. Denoting the retraction of $m$ along the direction $x_i$ with the displacement parameter $\epsilon$ by $m'=\mathcal{R}_{\epsilon x_i}(m)$ and the parallel transport of a vector $g$ along the direction $x_i$ with the displacement parameter $\epsilon$ and the anchor $m$ by $\mathcal{P}_{m,\epsilon x_i}(g)$ correctly the above should read:
 
 $$
-Hx_i = U^T \frac{\mathcal{P}_{\bm{m}',-\epsilon\bm{x}_i}[\bm{g}(\bm{m}')]-\bm{g}(\bm{m})}{\epsilon}+\mathcal{O}(\epsilon)~.
+Hx_i = U^T \frac{\mathcal{P}_{m',-\epsilon x_i}[g(m')]-g(m)}{\epsilon}+\mathcal{O}(\epsilon)~.
 $$
 
 How can we compute `Hx_i`? The answer is finite differences:
