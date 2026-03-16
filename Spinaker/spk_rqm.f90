@@ -175,7 +175,7 @@ module spk_rqm
                     end select
             end if
 
-            ! Compute Rayleigh Matrix X^T H X
+            ! Compute Rayleigh Matrix X^T H X which is p x p
             rq_matrix = 0.0d0
             do p_iter=1,p
                 do p_iter2=1,p
@@ -364,8 +364,7 @@ module spk_rqm
                             do p_iter=1,p
                                 call vec_to_embeddingspace(basis, X(:,p_iter), dummyvec3N)
                                 call fd_hessvec_forward(spin, rqm_settings%fd_settings%step, &
-                                        & rqm_settings%fd_settings%order, dummyvec3N, &
-                                        & dummyvec3N_2)
+                                        & rqm_settings%fd_settings%order, dummyvec3N, dummyvec3N_2)
                                 call vec_to_tangentspace(basis,dummyvec3N_2,dummyvec2N)
                                 HX_findiff(2*N_atom*(p_iter-1)+1:2*N_atom*p_iter) = dummyvec2N
                             end do
@@ -391,6 +390,7 @@ module spk_rqm
                 do p_iter=1,p
                     rq = rq + rq_matrix(p_iter,p_iter)
                 end do
+
                 ! The gradient is given by H X - X (X^T H X) and is a 3N x p Matrix
                 rq_gradient = HX_findiff
                 do p_iter=1,p
@@ -405,6 +405,7 @@ module spk_rqm
                 do p_iter=1,p
                     rq_gradient_2d(:,p_iter) = rq_gradient(2*N_atom*(p_iter-1)+1:2*N_atom*p_iter)
                 end do
+                
                 ! Compute the norm of the Gradient which is given by the Frobenius Norm:
                 ! sqrt(tr(G^T*G)) = sqrt(g_1^2 + ... + g_p^2)
                 rq_gradient_norm = 0.0d0
