@@ -1,0 +1,18 @@
+https://vscode.dev/github/hschrautzer/RQM_prototype/blob/main/Spinaker/spk_lbfgs.f90#L217
+This comment doesn't really make sense, should the first 'current' be previous?
+
+Is the d,y etc in the fortran code flattened and concatenated modes?
+what size is force? N_spins*3? N_spins*2?
+
+I kinda want the X and X-likes to be
+[N_spins, N_modes] instead of [N_spins*N_modes] :sad:
+
+what is
+line 376:
+res = 0.0d0 <--- ?
+res = DOT_PRODUCT(y(:,j),dummy_step)
+
+does the GOTO instruction also reset the history?
+YES
+
+remove dummy_step, use new_step and mutate?

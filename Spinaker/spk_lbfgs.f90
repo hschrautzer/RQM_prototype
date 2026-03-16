@@ -294,13 +294,13 @@ module spk_lbfgs
 
         end subroutine lbfgs_step_single_configuration_subsystem
 
-        subroutine lbfgs_step_noncurved(iteration, lbfgs_memory, force, force_previous, step_previous, &
+        subroutine lbfgs_step_noncurved(iteration, N_memory, force, force_previous, step_previous, &
                 & steplength_previous, rho, gamma, d, y, theta_max, new_step, stepl)
             !> Version of LBFGS without rotations
             !================================Input Variable=============================================================
             integer, intent(in) :: iteration                        !< Current iteration of the optimization algorithm
                                                                     !< (needed to access correct memory quantity)
-            integer, intent(in) :: lbfgs_memory                     !< Number of steps saved in Memory
+            integer, intent(in) :: N_memory                     !< Number of steps saved in Memory
             real(kind=xp), intent(in) :: force(:)                   !< Force of current configuration
                                                                     !< (in tangent space of curr. configuration)
             real(kind=xp), intent(in) :: force_previous(:)          !< Force of configuration in previous iteration
@@ -314,14 +314,14 @@ module spk_lbfgs
             real(kind=xp), intent(out) :: new_step(:)               !< New step (Displacement)
             real(kind=xp), intent(out) :: stepl                     !< Steplength
             !================================Inout Variable=============================================================
-            real(kind=xp), intent(inout) :: rho(lbfgs_memory)       !< memorized rho
-            real(kind=xp), intent(inout) :: gamma(lbfgs_memory)     !< memorized rho
+            real(kind=xp), intent(inout) :: rho(N_memory)       !< memorized rho
+            real(kind=xp), intent(inout) :: gamma(N_memory)     !< memorized rho
             real(kind=xp), intent(inout) :: d(:,:)                  !< memorized difference in spin configurations in 2N
             real(kind=xp), intent(inout) :: y(:,:)                  !< memorized difference in gradient in 2N
             !================================Local Variable=============================================================
             integer :: la                                           !< Length of the Arrays
-            integer :: k                                            !< Local copy of iteration count
-            integer :: l,n                                          !< Iterator through memory quantities
+            integer :: iteration_m1                                            !< Local copy of iteration count
+            integer :: l,ind_memory                                          !< Iterator through memory quantities
             integer :: j                                            !< Iterators
             real(kind=xp), allocatable :: step_previous_dumy(:)     !< Local copy of previous step in 3N tangent space
                                                                     !< of previous iter multiplied by previous step length
@@ -331,9 +331,9 @@ module spk_lbfgs
             la = size(force)
             allocate(step_previous_dumy(la),q(la),dummy_step(la))
 
-            k = iteration - 1
-    555     n = modulo(k, lbfgs_memory) + 1
-            if (k==0) then
+            iteration_m1 = iteration - 1
+    555     ind_memory = modulo(iteration_m1, N_memory) + 1
+            if (iteration_m1==0) then
                 new_step = force
                 rho=0.0d0
                 d=0.0d0
@@ -344,34 +344,34 @@ module spk_lbfgs
                 ! Rotate the previous step and the perp gradient (which are defined in the tangent space of the spin
                 ! of the current spin configuration) towards the current spin configuration tangent space
 
-                d(:,n)=step_previous_dumy
-                y(:,n)=force_previous - force !switch representation between force and gradient: (*-1.0d0)
+                d(:,ind_memory)=step_previous_dumy
+                y(:,ind_memory)=force_previous - force !switch representation between force and gradient: (*-1.0d0)
 
-                res = DOT_PRODUCT(y(:,n),d(:,n))
-                rho(n)=1.0d0 / res
+                res = DOT_PRODUCT(y(:,ind_memory),d(:,ind_memory))
+                rho(ind_memory)=1.0d0 / res
 
-                if (rho(n)<0.0d0) then
-                    k=0
+                if (rho(ind_memory)<0.0d0) then
+                    iteration_m1=0
                     goto 555
                 end if
                 q = -1.0d0 * force
 
-                do l=lbfgs_memory,1,-1
-                    j = modulo(l+n,lbfgs_memory) + 1
+                do l=N_memory,1,-1
+                    j = modulo(l+ind_memory,N_memory) + 1
                     res = DOT_PRODUCT(q,d(:,j))
                     gamma(j)=rho(j) * res
                     q(:)=q(:) - gamma(j) * y(:,j)
                 end do
 
-                res = DOT_PRODUCT(y(:,n),y(:,n))
+                res = DOT_PRODUCT(y(:,ind_memory),y(:,ind_memory))
 
-                dummy_step(:) = q(:) / (rho(n) * res)
+                dummy_step(:) = q(:) / (rho(ind_memory) * res)
 
-                do l=1,lbfgs_memory
-                    if (k<lbfgs_memory) then
+                do l=1,N_memory
+                    if (iteration_m1<N_memory) then
                         j = l
                     else
-                        j=modulo(l+n,lbfgs_memory)+1
+                        j=modulo(l+ind_memory,N_memory)+1
                     end if
                     res = 0.0d0
                     res = DOT_PRODUCT(y(:,j),dummy_step)

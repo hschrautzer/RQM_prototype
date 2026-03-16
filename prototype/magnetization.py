@@ -34,7 +34,7 @@ def _normalize_rows(x_n3: np.ndarray, eps: float = 1e-15) -> np.ndarray:
     return x_n3 / n[:, None]
 
 
-def _project_to_tangent(m_n3: np.ndarray, v_n3: np.ndarray) -> np.ndarray:
+def project_to_tangent(m_n3: np.ndarray, v_n3: np.ndarray) -> np.ndarray:
     """Project v to the tangent space at m on S^2: v - (v·m)m (row-wise)."""
     return v_n3 - np.sum(v_n3 * m_n3, axis=1)[:, None] * m_n3
 
@@ -244,7 +244,7 @@ class Magnetization:
         """
         s = self.spins_n3
         g = _view_n3(self.gradient())
-        g_tan = _project_to_tangent(s, g)
+        g_tan = project_to_tangent(s, g)
         return g_tan.reshape(-1)
 
     # -------------------------
@@ -314,7 +314,7 @@ class Magnetization:
 
         B = self.basis()  # (N,2,3)
         v = np.einsum("na,nai->ni", c, B)  # (N,3)
-        v = _project_to_tangent(self.spins_n3, v)  # enforce tangency numerically
+        v = project_to_tangent(self.spins_n3, v)  # enforce tangency numerically
         return v.reshape(-1)
 
     def gradient_tspace_2N(self) -> np.ndarray:
@@ -395,7 +395,7 @@ class Magnetization:
         m = current_mag.spins_n3
         v = _view_n3(v_flat)
 
-        v = _project_to_tangent(m, v) * float(displacement_parameter)
+        v = project_to_tangent(m, v) * float(displacement_parameter)
         theta = np.linalg.norm(v, axis=1)  # (N,)
 
         out = np.empty_like(m)
@@ -453,8 +453,8 @@ class Magnetization:
         v = _view_n3(v_flat)
         d = _view_n3(d_flat)
 
-        v = _project_to_tangent(m, v)
-        d = _project_to_tangent(m, d) * float(displacement_parameter)
+        v = project_to_tangent(m, v)
+        d = project_to_tangent(m, d) * float(displacement_parameter)
 
         theta = np.linalg.norm(d, axis=1)  # (N,)
         out = np.empty_like(v)
@@ -483,5 +483,5 @@ class Magnetization:
         # Ensure tangency at new spins
         new_mag = cls.retraction(current_mag, d.reshape(-1), displacement_parameter=1.0,
                                  rodrigues_threshold=rodrigues_threshold)
-        out = _project_to_tangent(new_mag.spins_n3, out)
+        out = project_to_tangent(new_mag.spins_n3, out)
         return out.reshape(-1)
