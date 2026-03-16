@@ -106,7 +106,8 @@ where $\Delta X  = P\Sigma V^T$ is the the compact singular value decomposition 
 
 ### Parallel Transport
 
-**Singular Value Decomposition**
+### Compact Singular Value Decomposition
+
 
 ## Finite Difference Part
 
