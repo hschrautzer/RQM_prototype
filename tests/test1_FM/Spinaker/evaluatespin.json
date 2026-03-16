@@ -1,0 +1,119 @@
+{
+  "spin_ini_file": "spin_i.dat",
+  "i_subsystem": false,
+  "subsystem_options": {
+    "i_subsystem_only":  false,
+    "center" : [0, 0, 0],
+    "semiaxes" : [5,5],
+    "angle": 0.0
+  },
+  "fd_options": {
+    "fd_i_richardson_epol": false,
+    "fd_richardson_error": 1.0e-8,
+    "fd_richardson_iter": 10,
+    "fd_scheme": 1,
+    "fd_scheme_order": 1,
+    "fd_step": 1.0e-6
+  },
+  "eigensettings": {
+      "i_sparse": false,
+      "i_dense": true,
+      "i_partial": true,
+      "i_full": false,
+      "eigensolver": 4,
+      "eigensolver_mkl_options":
+      {
+        "solver": 0,
+        "stop_crit_tol": 6,
+        "rel_abs_stop_crit": 0
+      }
+  },
+  "i_energy": false,
+  "energy_options": {
+    "i_contributions": false,
+    "i_density": false,
+    "i_density_contributions": false
+  },
+  "i_first_derivative": false,
+  "first_deriv_options": {
+    "i_gradient": true,
+    "i_force": false,
+    "i_chull_gradient": false,
+    "threshold_gradientnorm_chull": 1e-8,
+    "i_gradient_contributions": false,
+    "i_torque": false
+  },
+  "i_second_derivative": false,
+  "second_deriv_options": {
+    "i_dense": false,
+    "i_sparse": false,
+    "i_hessian3N": false,
+    "i_tspace_basis": false,
+    "i_shape_operator": false,
+    "i_hessian2N": false,
+    "i_perform_energy_gradient_hessian_test": false,
+    "i_hessvec_findiff": false,
+    "vec_ini_file": "vec_ini.dat",
+    "i_eigenpairs": false,
+    "i_eigenvalues_only": false,
+    "N_eigenpairs": 1,
+    "i_realspace_modes": false
+  },
+  "i_construct_modes": false,
+  "construct_modes_options": {
+    "i_translation": false,
+    "translation_direction": [1.0, 0.0],
+    "i_rotation": false,
+    "rot_axis": [0.0, 0.0, 1.0],
+    "rot_center": [25.0, 25.0, 0.0],
+    "i_scaling": false,
+    "scaling_center": [25.0, 25.0, 0.0],
+    "vec_direction": 1.0,
+    "i_elongation1": false,
+    "elongation_direction1": [1.0, 0.0, 0.0],
+    "elongation1_stripe_width": 5.0,
+    "elongation_sign1": 1.0,
+    "i_elongation2": false,
+    "elongation_direction2": [0.0, 1.0, 0.0],
+    "elongation2_stripe_width": 5.0,
+    "elongation_sign2": 1.0
+  },
+  "i_rqm": true,
+  "rqm_options": {
+        "i_random_initial": true,
+        "i_vec_initial": false,
+        "vec_ini_files": "vec_ini_?.dat",
+        "i_compare_with_exact": false,
+        "subspace_size": 4,
+        "i_rndm_noise": false,
+        "amp_rndm": 0.01,
+        "solver": 3,
+        "conv_crit": 1.0e-10,
+        "n_steps": 1000,
+        "vpo_solver": {
+          "vpo_mass": 1.0,
+          "vpo_dt": 0.1
+        },
+        "euler_solver": {
+          "euler_dt": 0.1
+        },
+        "lbfgs_solver": {
+          "lbfgs_memory": 3,
+          "lbfgs_theta_max": 0.5
+        }
+      },
+  "outputs": {
+    "i_out_subsys": false,
+    "i_out_gradient": false,
+    "i_out_force": false,
+    "i_out_torque": false,
+    "i_out_tangentspace_basis": false,
+    "i_out_hessian3N": false,
+    "i_out_shape_operator": false,
+    "i_out_hessian2N": false,
+    "i_out_eigenvectors2N": false,
+    "i_out_eigenvectors3N": true,
+    "i_out_initial_randomvec": false,
+    "i_out_info_rqm": true
+  }
+}
