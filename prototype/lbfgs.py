@@ -24,6 +24,11 @@ class lbfgs_minimizer:
 	d: np.ndarray 					# Difference in spin configurations in 2N
 	y: np.ndarray
 
+	# RQ variables
+	rq_matrix: np.ndarray
+	rq_force: np.ndarray
+	rq_gradient_norm: float
+
 	# Volatile variables
 	force: np.ndarray # 2xN_spinsxN_modes
 	rq_step: np.ndarray
@@ -122,7 +127,7 @@ class lbfgs_minimizer:
 		else:
 			self.steplength = np.float64(1.0)
 
-	def rq_force_calc(self, mag: Magnetization, X_n2: np.ndarray) -> tuple[np.ndarray, float]:
+	def rq_force_calc(self, mag: Magnetization, X_n2: np.ndarray):
 		t_HX = mag.finite_difference_HX(X_n2) # 2N_spins x N_modes
 
 		rq_matrix = np.zeros([self.N_modes, self.N_modes])
@@ -135,11 +140,10 @@ class lbfgs_minimizer:
 		rq_gradient = rq_gradient - X_n2 @ rq_matrix # 2N_spins x N_modes - 2N_spins x N_modes @ N_modes x N_modes
 		rq_gradient = 2 * rq_gradient # 2N_spins x N_modes
 
-		rq_gradient_norm = float(np.linalg.norm(rq_gradient, ord='fro'))
-		self.result['rq_gradient_norm'].append(rq_gradient_norm)
+		self.rq_gradient_norm = float(np.linalg.norm(rq_gradient, ord='fro'))
+		self.result['rq_gradient_norm'].append(self.rq_gradient_norm)
 
-		rq_force = - rq_gradient
-		return rq_force, rq_gradient_norm
+		self.rq_force = - rq_gradient
 
 	def minimize(self, mag: Magnetization, vec_ini: np.ndarray):
 		v_fin_n3 = np.zeros([3*self.N_spins])
@@ -164,10 +168,10 @@ class lbfgs_minimizer:
 		# rq_gradient = rq_gradient - X_n2 @ rq_matrix # 2N_spins x N_modes - 2N_spins x N_modes @ N_modes x N_modes
 		# rq_gradient = 2 * rq_gradient # 2N_spins x N_modes
 
-		rq_force, rq_gradient_norm = self.rq_force_calc(mag, X_n2)
+		self.rq_force_calc(mag, X_n2)
 
 		for iter in range(self.N_iter):
-			if rq_gradient_norm <= self.rq_grad_tol:
+			if self.rq_gradient_norm <= self.rq_grad_tol:
 				self.result['rqm_iterations'] = iter
 				self.result['status'] = "converged"
 				break
@@ -175,21 +179,24 @@ class lbfgs_minimizer:
 				self.result['rqm_iterations'] = iter
 				self.result['warnings'].append("RQM exceeded iterations")
 				self.result['status'] = "not converged"
-			self.step(rq_force)
+			self.step(self.rq_force)
 			self.force_prev = self.force
 			self.steplength_prev = self.steplength
 			self.rq_step_prev = self.rq_step
 
 			self.X_prev = X_n2
 
-			U, S, VT = np.linalg.svd(X_n2)
+			U, S, VT = np.linalg.svd(self.rq_step)
 
 			# grassman retraction w. USV
 			# transports w. USV
+			# QR retract X
 
+		self.rq_force_calc(mag, X_n2)
 
+		t_eigval, t_eigvec = np.linalg.eig(self.rq_matrix)
 
-
-
+		mag.lift_from_basis(X_n2 @ t_eigvec)
+		self.result['eigenvalues'] = t_eigval
 
 		return self.result
