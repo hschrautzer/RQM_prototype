@@ -333,7 +333,7 @@ class Magnetization:
         :return: the action of the Hessian
         """
         shape = np.shape(X)
-        dim_subspace = shape[2]
+        dim_subspace = shape[1]
         HX = np.zeros_like(X)
         for p in range(dim_subspace):
             if technique == "simple_fd":
@@ -376,7 +376,8 @@ class Magnetization:
 
 
     def fd_richardson_HcolX(self, x):
-            #@todo
+        pass
+
     # -------------------------
     # Retraction / parallel transport
     # -------------------------

@@ -64,7 +64,7 @@ class RQM:
 
 
     def __init__(self, mag: Magnetization, simudir: Union[Path, None] = None,
-                 epsilon_fin_diff: float = 1.0, conv_crit: float) -> None:
+                 epsilon_fin_diff: float = 1.0, conv_crit: float=1.0e-12) -> None:
         r"""
         Initializes the Rayleigh Quotient Minimization.
 
@@ -161,6 +161,7 @@ class RQM:
         norm_rq = None #@todo
 
         for n in range(N_steps):
+            pass
 
 
 

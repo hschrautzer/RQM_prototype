@@ -1,0 +1,80 @@
+: =================================SPINAKER====================================
+SPK: Bonjour, Hallo and Góðan dag! Congratulations: You are using Spinaker Version  0.1.3.dev!
+SPK: A package for atomistic spin simulations.
+SPK: All developers hope that you enjoy this moment.
+SPK: This code has been developed in:
+----: University of Kiel, Germany
+----: Group: Stefan Heinze
+----: University of Iceland
+----: Group: Pavel F. Bessarab
+SPK: Corresponding developers:
+SPK: Hendrik Schrautzer (hes93@hi.is)
+SPK: Moritz A. Goerzen (goerzen@physik.uni-kiel.de)
+SPK: Stephan von Malottki (malottki@physik.uni-kiel.de)
+SPK: Bjarne Beyer
+SPK: Leo Kollwitz
+SPK: Eike Tessars
+SPK: Exact version: 0.1.3.dev-286-g5a1cb6f6
+: -----------------------SETUP------------------------
+SETUP: Read algorithm.json...
+----SETUP: Checking inputs for algorithm.json...
+----SETUP: ...done
+SETUP: ...done
+SETUP: You chose:
+----SETUP: Evaluate Spin Lattice properties.
+SETUP: Read about the selection of output files.
+----INPUT-INFO: outputselection.json not found.
+----INPUT-INFO: Loading defaults for sel. algorithm
+SETUP: ...done
+SETUP: Setup the lattice...
+----INPUT-WARNING: No magnetic field will be considered (constants zero).
+----INPUT-WARNING: No anisotropy input given. Anisotropy axis will be along z.
+----INPUT-WARNING: Anisotropy constants will be zero.
+----INPUT-WARNING: No anisotropy will be considered (constants zero).
+----INPUT-WARNING: No bilinear dmi input given
+----INPUT-WARNING: No bilinear ASE will be considered (empty input)
+----INPUT-INFO: No dipole-dipole interaction will considered (empty input).
+----INPUT-WARNING: No biquadratic exchange will be considered (empty input)
+----INPUT-WARNING: No 4spin4site exchange will be considered (empty input)
+----INPUT-WARNING: No 4spin3site exchange will be considered (empty input)
+----INPUT-WARNING: No 4spin exchange will be considered
+SETUP: ...done
+SETUP: Setup the neighbors...
+----SETUP-NEIGHBORS: Calculate bilinear neighbor shell distances...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Calculate bilinear number of neighbors per shell...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Calculate number of neighs dep. on atomic species...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Calculate bilinear neighbors (index shifts _allbds)...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Calculate bilinear neighbors (index shifts _fwdbds)...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Calculate bilinear table of neighbors (fwdgrp, fwdbds)...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Calculate bilinear table of neighbors (allgrp, allbds)...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Connect the bilinear interaction constants to adresses of neighs (fwdgrp, fwdbds)...
+----SETUP-NEIGHBORS: ...done
+----SETUP-NEIGHBORS: Connect the bilinear interaction constants to adresses of neighs (allgrp, allbds)...
+----SETUP-NEIGHBORS: ...done
+SETUP: ...done
+----SETUP-ALGO: Execute the selected algorithm...
+----EVAL-SPIN: Evaluation Algorithm started. Reading input...
+----EVAL-SPIN: ...done
+----INPUT-INFO: Check inputs for evaluate spintexture algorithm...
+----INPUT-INFO: ... done
+----EVAL-SPIN: Read spin texture from file spin_i.dat ...
+----EVAL-SPIN: ...done
+----EVAL-SPIN: Evaluate Rayleigh Quotient Minimization...
+--------EVAL-SPIN: Calculate Tangent Space Basis (N times a 3 x 2 Matrix)...
+--------EVAL-SPIN: ... done
+--------EVAL-SPIN: Create initial guess for RQM with random vectors...
+--------EVAL-SPIN: ... done
+--------EVAL-SPIN: Call RQM with info output ...
+--------EVAL-SPIN: ...done
+----EVAL-SPIN: ...done
+----EVAL-SPIN: Writing evaluate spintexture results into info_spin.json
+----SETUP-ALGO: ...done
+SPK: Total execution time: 0.406717061996460s
+SPK: Finished simulation.

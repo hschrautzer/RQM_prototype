@@ -1,0 +1,9 @@
+{
+    "i_logfile": true,
+    "logfilename": "spk_logfile.txt",
+    "i_generalinfo_out": true,
+    "outputs": {
+        "i_totalexecutiontime": true,
+        "i_RSSmemoryusage": false
+    }
+}

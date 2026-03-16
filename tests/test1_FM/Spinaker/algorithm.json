@@ -1,0 +1,13 @@
+{
+    "i_setup_only": false,
+    "i_evaluate_spintexture": true,
+    "i_montecarlo": false,
+    "i_minimization": false,
+    "i_dynamic": false,
+    "i_modefollowing": false,
+    "i_gmmf": false,
+    "i_deformation": false,
+    "i_gneb": false,
+    "i_htst": false,
+    "i_sp_search": false
+}
