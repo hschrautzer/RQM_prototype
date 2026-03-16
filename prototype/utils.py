@@ -24,3 +24,8 @@ Retracts a (2,N,P) array onto the Grassmaniann using QR, and discarding R
 def GM_retraction(i_X: np.ndarray) -> np.ndarray:
 	t_QR_res = np.linalg.qr(i_X)
 	return t_QR_res.Q
+
+
+"""
+Performs a thin singular value decomposition of thin matrix X
+"""
