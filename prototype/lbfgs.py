@@ -2,7 +2,9 @@ import numpy as np
 from dataclasses import dataclass
 from magnetization import *
 from utils import *
-
+import logging
+from pathlib import Path
+from typing import Union
 """
 Recreated from Spinaker subroutine lbfgs_step_noncurved
 and its calling subroutine
@@ -28,12 +30,20 @@ class lbfgs_minimizer:
 	new_step: np.ndarray
 	steplength: np.float64
 
-	def _init__(self,
+	def __init__(self,
 				N_memory: int,
 				theta_max: np.float64,
 				N_spins: int,
-				N_modes: int):
-			
+				N_modes: int,
+				simudir: Union[Path, None] = None) -> None:
+			# Setup logger and simulation directory.
+			if simudir is None:
+				self._simudir = Path.cwd() / "RQM"
+				self._simudir.mkdir(exist_ok=True)
+			else:
+				self._simudir = simudir
+			self._logger = self._setup_logger(name=self.__class__.__name__, verbose=20,
+											  logfilepath=self._simudir / f"rqm.log")
 			self.N_memory = N_memory
 			self.theta_max = theta_max
 			self.N_spins = N_spins
@@ -50,6 +60,34 @@ class lbfgs_minimizer:
 			self.gamma = np.zeros([self.N_memory])
 			self.dummy_step = np.zeros([2*self.N_spins,self.N_modes])
 			self.step_previous_dummy = np.zeros([2*self.N_spins, self.N_modes])
+
+	@staticmethod
+	def _setup_logger(name: str, verbose: int, logfilepath: Union[Path, None]) -> logging.Logger:
+		r"""
+        Organizes the setup of the Logger.
+
+        :param name: The name of the logger. A good idea is to choose __name__ within the class which creates the logger
+        :param verbose: The verbose-level: 10 Debug, 20: Information, 30: Warning, 40: Error
+        :param logfilepath: The path defining the log-file. If None no file will be created and only the stdout will be
+            used for logging.
+        :return: The instance of the Logger
+        """
+		l_logger = logging.getLogger(name)
+		if verbose in [10, 20, 30, 40]:
+			formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+			console_handler = logging.StreamHandler()
+			console_handler.setLevel(verbose)
+			console_handler.setFormatter(formatter)
+			l_logger.addHandler(console_handler)
+			if logfilepath is not None:
+				file_handler = logging.FileHandler(logfilepath)
+				file_handler.setLevel(verbose)
+				file_handler.setFormatter(formatter)
+				l_logger.addHandler(file_handler)
+			l_logger.setLevel(verbose)
+		else:
+			raise ValueError("Not a valid verbose-level")
+		return l_logger
 
 	def calc_step(self, force):
 		# Selecting memory index for LIFO history
