@@ -99,10 +99,10 @@ $$
 A projection like retraction on the Grassmannian is simply computing the $X=QR%$ decomposition and setting $X'=Q$. Say we computed the step (e.g. by L-BFGS) $\Delta X$ and we want to advance $X$. Following the geodesic along $\Delta X$ on the Grassmannian with a displacement parameter $\delta $ can be computed using
 
 $$
-X(\delta)=XV\cos(\Sigma)V^T + P \sin(\Sigma)V^T
+X(\delta)=XV\cos(\Sigma\delta )V^T + P \sin(\Sigma\delta)V^T
 $$
 
-where $\Delta X  = P\Sigma V^T$ is the the compact singular value decomposition of $\Delta X$ with $\Sigma=\text{diag}(\sigma_1,\dots,\sigma_p)$ and things like $\cos(\Sigma)$ means $\text{diag}(\cos(\sigma_1),\dots,\cos(\sigma_p))$.
+where $\Delta X  = P\Sigma V^T$ is the the compact singular value decomposition of $\Delta X$ with $\Sigma=\text{diag}(\sigma_1,\dots,\sigma_p)$ and things like $\cos(\Sigma\delta)$ means $\text{diag}(\cos(\delta \sigma_1),\dots,\cos(\delta \sigma_p))$.
 
 ### Parallel Transport
 

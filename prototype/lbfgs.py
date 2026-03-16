@@ -184,8 +184,9 @@ class lbfgs_minimizer:
 
 			self.X_prev = X_n2
 
-			U, S, VT = np.linalg.svd(X_n2)
+			U, S, VT = np.linalg.svd(self.rq_step)
 
+			X_n2 = GM_retraction_exp(X=X_n2,U=U,S=S,VT=VT,delta=self.steplength)
 			# grassman retraction w. USV
 			# transports w. USV
 
