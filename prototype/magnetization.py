@@ -242,9 +242,9 @@ class Magnetization:
         Riemannian gradient in embedding representation, flattened (3N,):
             g_R = g - (g·s) s
         """
-        s = self.spins_n3
-        g = _view_n3(self.gradient())
-        g_tan = project_to_tangent(s, g)
+        spins_3n = self.spins_n3
+        gradient_3n = _view_n3(self.gradient())
+        g_tan = project_to_tangent(spins_3n, gradient_3n)
         return g_tan.reshape(-1)
 
     # -------------------------
@@ -322,7 +322,9 @@ class Magnetization:
         g_tan = _view_n3(self.gradient_tspace_3N())
         return self.project_to_basis(g_tan)
 
-    def finite_difference_HX(self, X: np.ndarray, technique: str = "simple_fd", eps: float = 1.0e-6) -> np.ndarray:
+#@Hendrik modifying the eps variable here from a sensible 1.0e-6 to a crazy 1e2
+#         movers us away from the 999999.999999 problem
+    def finite_difference_HX(self, X: np.ndarray, technique: str = "simple_fd", eps: float = 1.0e2) -> np.ndarray:
         r"""
         Calculate action of the Hessian on X using finite differences
 
@@ -371,6 +373,10 @@ class Magnetization:
                                                                          vec_tspace=grad_3N_displaced,
                                                                          displacement_parameter=-1.0 * eps)
         fin_diff_3N = (grad_3N_displaced_transported - grad_3N) / eps
+        print("the gradient should be orthogonal to the magnetization if you after rotating+transporting back\n" \
+        " do this should be ~0")
+        print(np.dot(_as_flat_3n(mag_displaced.spins_n3, name="bob"), grad_3N))
+        print(np.dot(_as_flat_3n(mag_displaced.spins_n3, name="steve"), grad_3N_displaced_transported))
         Hx_2N = self.project_to_basis(vec_embedding_space=fin_diff_3N)
         return Hx_2N
 
@@ -389,6 +395,7 @@ class Magnetization:
 
         vec_tspace: flattened (3N,) or (N,3) tangent vector at current spins.
         """
+        #@Hendrik is this flattening necessary?↓↓↓↓
         v_flat = _as_flat_3n(vec_tspace, name="vec_tspace")
         if v_flat.size != current_mag.spins.size:
             raise ValueError("vec_tspace must have length 3N matching spins")

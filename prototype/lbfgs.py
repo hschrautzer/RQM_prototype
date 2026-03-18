@@ -30,8 +30,8 @@ class lbfgs_minimizer:
 	y: np.ndarray
 
 	# RQ variables
-	rq_matrix: np.ndarray
-	rq_force: np.ndarray
+	rq_matrix_pxp: np.ndarray
+	rq_force_2nxp: np.ndarray
 	rq_gradient_norm: float
 
 	# Volatile variables
@@ -99,7 +99,7 @@ class lbfgs_minimizer:
 			for l in range(self.N_memory, 0, -1):  # MEGASHARP (+-)1?
 				j = np.mod(l + ind_memory,
 						   self.N_memory)  # (+-)1?, also, odd that this is adding memory index as an offset
-				q_dot_d = np.dot(q[:, :, :].ravel(),
+				q_dot_d = np.dot(q[:, :].ravel(),
 								 self.d[:, :, j].ravel())  # SHARP?
 				self.gamma[j] = self.rho[j] * q_dot_d
 				q[:] = q[:] - self.gamma[j] * self.y[:, :, j]
@@ -107,7 +107,7 @@ class lbfgs_minimizer:
 			y_dot_y = np.dot(self.y[:, :, ind_memory].ravel(),
 							 self.d[:, :, ind_memory].ravel())  # SHARP
 
-			self.dummy_step[:, :] = q[:, :, :] / (self.rho[ind_memory] * y_dot_y)
+			self.dummy_step[:, :] = q[:, :] / (self.rho[ind_memory] * y_dot_y)
 
 			for l in range(1, self.N_memory):  # (+-)1?
 				if self.iteration <= self.N_memory:
@@ -131,27 +131,27 @@ class lbfgs_minimizer:
 		else:
 			self.steplength = np.float64(1.0)
 
-	def rq_force_calc(self, mag: Magnetization, X_n2: np.ndarray) -> tuple[np.ndarray, float]:
-		t_HX = mag.finite_difference_HX(X_n2)  # 2N_spins x N_modes
+	def rq_force_calc(self, mag: Magnetization, X_2np: np.ndarray) -> tuple[np.ndarray, float]:
+		t_HX_2nxp = mag.finite_difference_HX(X_2np)  # 2N_spins x N_modes
 
-		rq_matrix = np.zeros([self.N_modes, self.N_modes])
-		# Olafur: I adjusted it to arbitrary number of modes (before it was 2). Furthermore I think it was wrong. It
+		self.rq_matrix_pxp = np.zeros([self.N_modes, self.N_modes])
+		#@olafur: I adjusted it to arbitrary number of modes (before it was 2). Furthermore I think it was wrong. It
 		# should be X^T not X^T^T (which I think you were doing before) (I left the line below commented out for reference)
 		#rq_matrix = np.reshape(X_n2, [self.N_modes, -1]).T @ t_HX  # SHARP
 
-		# Olafur: below I was always rq_matrix instead of self.rq_matrix. I changed that.
-		self.rq_matrix = X_n2.T @ t_HX
-		rq = np.trace(self.rq_matrix)
+		#@olafur: below I was always rq_matrix instead of self.rq_matrix. I changed that.
+		self.rq_matrix_pxp = X_2np.T @ t_HX_2nxp
+		rq = np.trace(self.rq_matrix_pxp)
 
 		# Check this ↓↓↓
-		rq_gradient = t_HX  # 2N_spins x N_modes
-		rq_gradient = rq_gradient - X_n2 @ self.rq_matrix  # 2N_spins x N_modes - 2N_spins x N_modes @ N_modes x N_modes
-		rq_gradient = 2 * rq_gradient  # 2N_spins x N_modes
+		rq_gradient_2nxp = t_HX_2nxp  # 2N_spins x N_modes
+		rq_gradient_2nxp = rq_gradient_2nxp - X_2np @ self.rq_matrix_pxp  # 2N_spins x N_modes - 2N_spins x N_modes @ N_modes x N_modes
+		rq_gradient_2nxp = 2 * rq_gradient_2nxp  # 2N_spins x N_modes
 
-		self.rq_gradient_norm = float(np.linalg.norm(rq_gradient, ord='fro'))
+		self.rq_gradient_norm = float(np.linalg.norm(rq_gradient_2nxp, ord='fro'))
 		self.result['rq_gradient_norm'].append(self.rq_gradient_norm)
 
-		self.rq_force = - rq_gradient
+		self.rq_force_2nxp = - rq_gradient_2nxp
 
 	def minimize(self, mag: Magnetization, vec_ini: np.ndarray):
 		r"""
@@ -161,34 +161,21 @@ class lbfgs_minimizer:
 		:param vec_ini: initial vector. This should be in embedding space 3N representation.
 		:return:
 		"""
-		# Olafur: previously this was of shape (3N), I changed that to (3N, p)
-		v_fin_n3 = np.zeros([3 * self.N_spins, self.N_modes])
+		#@olafur: previously this was of shape (3N), I changed that to (3N, p)
+		v_fin_3nxp = np.zeros([3 * self.N_spins, self.N_modes])
 		rq = 0
-		X_n2 = np.zeros([2 * self.N_spins, self.N_modes])
+		X_2nxp = np.zeros([2 * self.N_spins, self.N_modes])
 		evals = 0
 		for ind_modes in range(self.N_modes):
-			X_n2[:, ind_modes] = mag.project_to_basis(vec_ini[:, ind_modes])
-			# @ Olafur: we don't need that. The QR decomposition below will take care.
+			X_2nxp[:, ind_modes] = mag.project_to_basis(vec_ini[:, ind_modes])
+			# @olafur: we don't need that. The QR decomposition below will take care.
 			#X_n2[:, ind_modes] = vec_ini[:, ind_modes] / norm_n2
 
-		X_n2 = GM_retraction(X_n2)
+		X_2nxp = GM_retraction(X_2nxp)
 
-		# t_HX = mag.finite_difference_HX(X_n2) # 2N_spins x N_modes
-
-		# rq_matrix = np.zeros([self.N_modes, self.N_modes])
-		# rq_matrix = np.reshape(X_n2, [2,-1]).T @ t_HX #SHARP
-
-		# rq = np.linalg.trace(rq_matrix)
-
-		# # Check this ↓↓↓
-		# rq_gradient = t_HX # 2N_spins x N_modes
-		# rq_gradient = rq_gradient - X_n2 @ rq_matrix # 2N_spins x N_modes - 2N_spins x N_modes @ N_modes x N_modes
-		# rq_gradient = 2 * rq_gradient # 2N_spins x N_modes
-
-		self.rq_force_calc(mag, X_n2)
+		self.rq_force_calc(mag, X_2nxp)
 
 		for iter in range(self.N_iter):
-			# @ Olafur: I think the below was missing
 			self.iteration = iter
 
 			if self.rq_gradient_norm <= self.rq_grad_tol:
@@ -199,41 +186,41 @@ class lbfgs_minimizer:
 				self.result['rqm_iterations'] = iter
 				self.result['warnings'].append("RQM exceeded iterations")
 				self.result['status'] = "not converged"
-			self.step(self.rq_force)
+			self.step(self.rq_force_2nxp)
 			self.steplength_prev = self.steplength
-			# @Olafur (I commented this out, this is supposed to be updated by parallel transport, see below)
+			# @olafur (I commented this out, this is supposed to be updated by parallel transport, see below)
 			#self.rq_step_prev = self.rq_step
 			#self.force_prev = self.force
-			self.X_prev = X_n2
+			self.X_prev = X_2nxp
 
-			#@ Olafur: the full_matrices flag was missing, we want the compact SVD
+			#@olafur: the full_matrices flag was missing, we want the compact SVD
 			U, S, VT = np.linalg.svd(self.rq_step, full_matrices=False)
 
 			# Retract the configuration
-			X_n2 = GM_retraction_exp(X=X_n2, U=U, S=S, VT=VT, delta=float(self.steplength))
+			X_2nxp = GM_retraction_exp(X=X_2nxp, U=U, S=S, VT=VT, delta=float(self.steplength))
 			# For efficiency the parallel transport is done in 2 steps: computing the transport matrix and applying the
 			# transport matrix
 			TM = GM_calc_transportmatrix(X=self.X_prev,U=U,S=S,VT=VT,delta=float(self.steplength_prev))
 			self.rq_step_prev = GM_parallel_transport(b=self.rq_step,U=U,TM=TM)
-			self.force_prev = GM_parallel_transport(b=self.rq_force,U=U,TM=TM)
+			self.force_prev = GM_parallel_transport(b=self.rq_force_2nxp,U=U,TM=TM)
 			for k in range(self.N_memory):
 				self.d[:,:,k] = GM_parallel_transport(self.d[:,:,k],U=U,TM=TM)
 				self.y[:,:,k] = GM_parallel_transport(self.y[:,:,k],U=U,TM=TM)
 
 			# Orthogonalize (to avoid accumulating numerical errors)
-			X_n2 = GM_retraction(X_n2)
+			X_2nxp = GM_retraction(X_2nxp)
 			# Quantities for the next iteration
-			self.rq_force_calc(mag,X_n2)
+			self.rq_force_calc(mag,X_2nxp)
 
 		# Compute the Ritz-Vectors to rotate the found minimum solution of R(X) to the eigenvector representation of H
 		# that we want to compute
-		t_eigval, t_eigvec = np.linalg.eigh(self.rq_matrix)
+		t_eigval, t_eigvec = np.linalg.eigh(self.rq_matrix_pxp)
 		print(t_eigval)
-		print(self.rq_matrix)
+		print(self.rq_matrix_pxp)
 		# Apply Rayleigh-Ritz and represent in 3N.
-		# Olafur: we have to feed this Mode-wise to the projection. I corrected that.
-		X_solution = X_n2 @ t_eigvec
+		#@olafur: we have to feed this Mode-wise to the projection. I corrected that.
+		X_solution = X_2nxp @ t_eigvec
 		for k in range(self.N_modes):
-			v_fin_n3[:,k] = mag.lift_from_basis(X_solution[:,k])
+			v_fin_3nxp[:,k] = mag.lift_from_basis(X_solution[:,k])
 		self.result['eigenvalues'] = t_eigval
-		return self.result, v_fin_n3
+		return self.result, v_fin_3nxp
