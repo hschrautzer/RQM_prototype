@@ -324,7 +324,7 @@ class Magnetization:
 
 #@Hendrik modifying the eps variable here from a sensible 1.0e-6 to a crazy 1e2
 #         movers us away from the 999999.999999 problem
-    def finite_difference_HX(self, X: np.ndarray, technique: str = "simple_fd", eps: float = 1.0e2) -> np.ndarray:
+    def finite_difference_HX(self, X: np.ndarray, technique: str = "simple_fd", eps: float = 1.0e-6) -> np.ndarray:
         r"""
         Calculate action of the Hessian on X using finite differences
 
@@ -369,14 +369,17 @@ class Magnetization:
         mag_displaced = Magnetization.retraction(current_mag=self, vec_tspace=x_3N, displacement_parameter=eps)
         grad_3N_displaced = mag_displaced.gradient_tspace_3N()
         grad_3N_displaced_transported = Magnetization.parallel_transport(current_mag=mag_displaced,
-                                                                         transport_vec=x_3N,
-                                                                         vec_tspace=grad_3N_displaced,
-                                                                         displacement_parameter=-1.0 * eps)
+                                                                         transport_vec=grad_3N_displaced,
+                                                                         vec_tspace=-x_3N,
+                                                                         displacement_parameter=eps)
         fin_diff_3N = (grad_3N_displaced_transported - grad_3N) / eps
-        print("the gradient should be orthogonal to the magnetization if you after rotating+transporting back\n" \
-        " do this should be ~0")
-        print(np.dot(_as_flat_3n(mag_displaced.spins_n3, name="bob"), grad_3N))
-        print(np.dot(_as_flat_3n(mag_displaced.spins_n3, name="steve"), grad_3N_displaced_transported))
+        #print("the gradient should be orthogonal to the magnetization if you after rotating+transporting back\n" \
+        #" do this should be ~0")
+        #print(np.dot(_as_flat_3n(self.spins_n3, name="pete"), grad_3N))
+        #print(np.dot(_as_flat_3n(self.spins_n3, name="pete"), x_3N))
+        #print(np.dot(_as_flat_3n(mag_displaced.spins_n3, name="bob"), grad_3N_displaced))
+        #print(np.dot(_as_flat_3n(self.spins_n3, name="steve"), grad_3N_displaced_transported))
+        #quit()
         Hx_2N = self.project_to_basis(vec_embedding_space=fin_diff_3N)
         return Hx_2N
 
@@ -396,6 +399,8 @@ class Magnetization:
         vec_tspace: flattened (3N,) or (N,3) tangent vector at current spins.
         """
         #@Hendrik is this flattening necessary?↓↓↓↓
+        #@Olafur: no, it might have overhead. However, it makes sure that the format is correct because of the
+        # internal check within _as_flat_3n and since efficiency is currently not the task...
         v_flat = _as_flat_3n(vec_tspace, name="vec_tspace")
         if v_flat.size != current_mag.spins.size:
             raise ValueError("vec_tspace must have length 3N matching spins")
@@ -405,11 +410,9 @@ class Magnetization:
 
         v = project_to_tangent(m, v) * float(displacement_parameter)
         theta = np.linalg.norm(v, axis=1)  # (N,)
-
         out = np.empty_like(m)
         small = theta < rodrigues_threshold
         large = ~small
-
         if np.any(large):
             th = theta[large]
             u = v[large] / th[:, None]
@@ -421,7 +424,7 @@ class Magnetization:
             # sin(th)/th and cos(th) series
             sinc = 1.0 - th2 / 6.0 + (th2 * th2) / 120.0
             cost = 1.0 - th2 / 2.0 + (th2 * th2) / 24.0
-            out[small] = m[small] * cost[:, None] + v[small] * sinc[:, None]
+            out[small] = m[small] * np.cos(th)[:, None] + v[small] * sinc[:, None]
 
         out = _normalize_rows(out)
 
@@ -463,33 +466,41 @@ class Magnetization:
 
         v = project_to_tangent(m, v)
         d = project_to_tangent(m, d) * float(displacement_parameter)
-
         theta = np.linalg.norm(d, axis=1)  # (N,)
         out = np.empty_like(v)
 
         small = theta < rodrigues_threshold
         large = ~small
 
+        k = np.cross(m,d)
+        #k = _normalize_rows(k)
         if np.any(large):
             th = theta[large]
-            u = d[large] / th[:, None]
-            k = np.cross(m[large], u)
-            k = _normalize_rows(k)
-            out[large] = _rodrigues_rotate(v[large], k, th)
+            dv = np.sum(d[large] * v[large], axis = 1)[:, None]
+            kv = np.sum(k[large] * v[large], axis = 1)[:, None]
+            out[large] = (v[large] * np.cos(th)[:, None] - m[large] * dv * (np.sin(th)/th)[:, None]
+                          + k[large] * kv * ((1.0-np.cos(th)) / (th*th))[:, None])
+            #out[large] = _rodrigues_rotate(v[large], k, th)
 
         if np.any(small):
-            out_small = v[small].copy()
-            md = np.cross(m[small], d[small])
-            md_norm = np.linalg.norm(md, axis=1)
-            ok = md_norm > 1e-15
-            if np.any(ok):
-                k = md[ok] / md_norm[ok][:, None]
-                th = theta[small][ok]
-                out_small[ok] = _rodrigues_rotate(v[small][ok], k, th)
-            out[small] = out_small
+            th = theta[small]
+            dv = np.sum(d[small] * v[small], axis = 1)[:, None]
+            sin_part = (1.0 - 1.0 / 6.0 * th * th + 1.0 / 120.0 * th * th * th * th)[:, None]
+            kv = np.sum(k[small] * v[small], axis = 1)[:, None]
+            cos_part = (0.5 - 1.0 / 24.0 * th * th + 1.0 / 720.0 * th * th * th * th)[:, None]
+            out[small] = v[small] * np.cos(th)[:, None] - m[small] * dv * sin_part + k[small] * kv * cos_part
+            #out_small = v[small].copy()
+            #md = np.cross(m[small], d[small])
+            #md_norm = np.linalg.norm(md, axis=1)
+            #ok = md_norm > 1e-15
+            #if np.any(ok):
+            #    k = md[ok] / md_norm[ok][:, None]
+            #    th = theta[small][ok]
+            #    out_small[ok] = _rodrigues_rotate(v[small][ok], k, th)
+            #out[small] = out_small
 
         # Ensure tangency at new spins
-        new_mag = cls.retraction(current_mag, d.reshape(-1), displacement_parameter=1.0,
-                                 rodrigues_threshold=rodrigues_threshold)
-        out = project_to_tangent(new_mag.spins_n3, out)
+        #new_mag = cls.retraction(current_mag, d.reshape(-1), displacement_parameter=1.0,
+        #                         rodrigues_threshold=rodrigues_threshold)
+        #out = project_to_tangent(new_mag.spins_n3, out)
         return out.reshape(-1)

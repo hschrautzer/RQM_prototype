@@ -14,9 +14,10 @@ if __name__=="__main__":
 
     mag = Magnetization(points=points,spins=spins)
 
-    minimizer = lbfgs_minimizer(N_memory=3, theta_max=0.5, N_spins=mag.N, N_modes=4, N_iter=1, rq_grad_tol=1e-12)
+    minimizer = lbfgs_minimizer(N_memory=3, theta_max=0.5, N_spins=mag.N, N_modes=4, N_iter=100, rq_grad_tol=1e-12)
 
     # Initial vector to be random and in 3N space:
+    np.random.seed(2)
     vec_ini_3N = np.random.rand(3*mag.N, 4)
     vec_final = minimizer.minimize(mag=mag, vec_ini=vec_ini_3N)
     print(vec_final)
