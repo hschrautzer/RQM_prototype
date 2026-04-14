@@ -4,19 +4,43 @@ import numpy as np
 Calculates L2 norm of (2N,) vector, returns (N,)
 """
 def norm_n2(i_vec: np.ndarray) -> np.ndarray:
+	if len(i_vec.shape) != 1:
+		raise ValueError("this function only works on flattened arrays")
 	t_vec = i_vec**2
 	t_vec = np.reshape(t_vec, [2, -1])
 	t_vec = np.sum(t_vec, axis=0)
 	return t_vec
 
 """
+L2 normalizes a (2N,) vector, returns (2N,)
+"""
+def normalize_n2(i_vec: np.ndarray) -> np.ndarray:
+	if len(i_vec.shape) != 1:
+		raise ValueError("this function only works on flattened arrays")
+	t_norm = norm_n2(i_vec)
+	t_norm = np.repeat(t_norm, 2)
+	return i_vec / t_norm
+
+"""
 Calculates L2 norm of (3N,) vector, returns (N,)
 """
 def norm_n3(i_vec: np.ndarray) -> np.ndarray:
+	if len(i_vec.shape) != 1:
+		raise ValueError("this function only works on flattened arrays")
 	t_vec = i_vec**2
 	t_vec = np.reshape(t_vec, [3, -1])
 	t_vec = np.sum(t_vec, axis=0)
 	return t_vec
+
+"""
+L2 normalizes a (3N,) vector, returns (3N,)
+"""
+def normalize_n3(i_vec: np.ndarray) -> np.ndarray:
+	if len(i_vec.shape) != 1:
+		raise ValueError("this function only works on flattened arrays")
+	t_norm = norm_n2(i_vec)
+	t_norm = np.repeat(t_norm, 3)
+	return i_vec / t_norm
 
 """
 Retracts a (2,N,P) array onto the Grassmaniann using QR, and discarding R. This is the projection-like retraction

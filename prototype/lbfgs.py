@@ -16,13 +16,13 @@ Additional source: Ivanov, et al, 2021, Appendix F (https://doi.org/10.1016/j.cp
 class lbfgs_minimizer:
 	# Hyperparameters
 	N_memory: int  # Number of entries in memory
-	theta_max: np.float64
+	theta_max: float
 
 	# Persistent variables
 	iteration: int
 	force_prev: np.ndarray
 	rq_step_prev: np.ndarray
-	steplength_prev: np.float64
+	steplength_prev: float
 	X_prev: np.ndarray
 	rho: np.ndarray  # (d·y)**-1
 	gamma: np.ndarray
@@ -37,7 +37,7 @@ class lbfgs_minimizer:
 	# Volatile variables
 	force: np.ndarray  # 2xN_spinsxN_modes
 	rq_step: np.ndarray
-	steplength: np.float64
+	steplength: float
 
 	# Optimization parameters
 	N_iter: int
@@ -48,7 +48,7 @@ class lbfgs_minimizer:
 
 	def __init__(self,
 				N_memory: int,
-				theta_max: np.float64,
+				theta_max: float,
 				N_spins: int,
 				N_modes: int,
 				N_iter: int,
@@ -75,6 +75,7 @@ class lbfgs_minimizer:
 		self.dummy_step = np.zeros([2 * self.N_spins, self.N_modes])
 		self.step_previous_dummy = np.zeros([2 * self.N_spins, self.N_modes])
 		self.result = {"warnings": [], "rq_gradient_norm": []}
+		self.result['status'] = "not converged"
 
 	def calc_step(self, force):
 		# Selecting memory index for LIFO history
@@ -131,7 +132,7 @@ class lbfgs_minimizer:
 		else:
 			self.steplength = np.float64(1.0)
 
-	def rq_force_calc(self, mag: Magnetization, X_2np: np.ndarray) -> tuple[np.ndarray, float]:
+	def rq_force_calc(self, mag: Magnetization, X_2np: np.ndarray):
 		t_HX_2nxp = mag.finite_difference_HX(X_2np)  # 2N_spins x N_modes
 
 		self.rq_matrix_pxp = np.zeros([self.N_modes, self.N_modes])
@@ -185,19 +186,22 @@ class lbfgs_minimizer:
 			if iter >= self.N_iter:
 				self.result['rqm_iterations'] = iter
 				self.result['warnings'].append("RQM exceeded iterations")
-				self.result['status'] = "not converged"
-			self.step(self.rq_force_2nxp)
+# diag block original
+			# self.step(self.rq_force_2nxp)
+# diag block replacement
+			self.steplength = 1.0e-6
+			self.rq_step = self.rq_force_2nxp
 			self.steplength_prev = self.steplength
+#diag block end
 			# @olafur (I commented this out, this is supposed to be updated by parallel transport, see below)
 			#self.rq_step_prev = self.rq_step
 			#self.force_prev = self.force
 			self.X_prev = X_2nxp
 
-			#@olafur: the full_matrices flag was missing, we want the compact SVD
 			U, S, VT = np.linalg.svd(self.rq_step, full_matrices=False)
-
 			# Retract the configuration
 			X_2nxp = GM_retraction_exp(X=X_2nxp, U=U, S=S, VT=VT, delta=float(self.steplength))
+
 			# For efficiency the parallel transport is done in 2 steps: computing the transport matrix and applying the
 			# transport matrix
 			TM = GM_calc_transportmatrix(X=self.X_prev,U=U,S=S,VT=VT,delta=float(self.steplength_prev))
@@ -211,16 +215,29 @@ class lbfgs_minimizer:
 			X_2nxp = GM_retraction(X_2nxp)
 			# Quantities for the next iteration
 			self.rq_force_calc(mag,X_2nxp)
+#diag block
+			if True: #Diagnostic
+				if "dia_eigvalues" not in self.result.keys(): self.result["dia_eigvalues"] = np.zeros([self.N_iter, self.N_modes])
+				t_eigval, t_eigvec = np.linalg.eigh(self.rq_matrix_pxp)
+				self.result["dia_eigvalues"][self.iteration, :] = t_eigval
+				# print(t_eigval)
+				# print(self.rq_matrix_pxp)
+#diag block end
+			
 
 		# Compute the Ritz-Vectors to rotate the found minimum solution of R(X) to the eigenvector representation of H
 		# that we want to compute
 		t_eigval, t_eigvec = np.linalg.eigh(self.rq_matrix_pxp)
-		print(t_eigval)
-		print(self.rq_matrix_pxp)
+		# print(t_eigval)
+		# print(self.rq_matrix_pxp)
 		# Apply Rayleigh-Ritz and represent in 3N.
 		#@olafur: we have to feed this Mode-wise to the projection. I corrected that.
 		X_solution = X_2nxp @ t_eigvec
 		for k in range(self.N_modes):
 			v_fin_3nxp[:,k] = mag.lift_from_basis(X_solution[:,k])
+		
 		self.result['eigenvalues'] = t_eigval
-		return self.result, v_fin_3nxp
+		self.result['eigenmodes_3nxp'] = v_fin_3nxp
+		self.result['rq_eigenvectors'] = t_eigvec
+
+		return self.result

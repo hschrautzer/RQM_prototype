@@ -322,8 +322,6 @@ class Magnetization:
         g_tan = _view_n3(self.gradient_tspace_3N())
         return self.project_to_basis(g_tan)
 
-#@Hendrik modifying the eps variable here from a sensible 1.0e-6 to a crazy 1e2
-#         movers us away from the 999999.999999 problem
     def finite_difference_HX(self, X: np.ndarray, technique: str = "simple_fd", eps: float = 1.0e-6) -> np.ndarray:
         r"""
         Calculate action of the Hessian on X using finite differences
@@ -373,13 +371,6 @@ class Magnetization:
                                                                          vec_tspace=-x_3N,
                                                                          displacement_parameter=eps)
         fin_diff_3N = (grad_3N_displaced_transported - grad_3N) / eps
-        #print("the gradient should be orthogonal to the magnetization if you after rotating+transporting back\n" \
-        #" do this should be ~0")
-        #print(np.dot(_as_flat_3n(self.spins_n3, name="pete"), grad_3N))
-        #print(np.dot(_as_flat_3n(self.spins_n3, name="pete"), x_3N))
-        #print(np.dot(_as_flat_3n(mag_displaced.spins_n3, name="bob"), grad_3N_displaced))
-        #print(np.dot(_as_flat_3n(self.spins_n3, name="steve"), grad_3N_displaced_transported))
-        #quit()
         Hx_2N = self.project_to_basis(vec_embedding_space=fin_diff_3N)
         return Hx_2N
 

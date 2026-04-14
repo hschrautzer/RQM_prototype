@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
+from pprint import pprint
+import matplotlib.pyplot as plt
+
 from pathlib import Path
+
 from prototype.magnetization import Magnetization
 from prototype.lbfgs import lbfgs_minimizer
 
@@ -19,6 +23,11 @@ if __name__=="__main__":
     # Initial vector to be random and in 3N space:
     np.random.seed(2)
     vec_ini_3N = np.random.rand(3*mag.N, 4)
-    vec_final = minimizer.minimize(mag=mag, vec_ini=vec_ini_3N)
-    print(vec_final)
+    results = minimizer.minimize(mag=mag, vec_ini=vec_ini_3N)
+    pprint(results)
 
+    fig, ax = plt.subplots()
+    ax.plot(results["dia_eigvalues"], ls="", marker="+")
+    fig.show()
+
+    input('Press any key to exit')
